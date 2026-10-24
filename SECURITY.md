@@ -1,45 +1,37 @@
 # Security policy
 
-openGym is a self-hosted app: you run the server, you hold the data. This file says which
+Tarnished is a self-hosted app: you run the server, you hold the data. This file says which
 versions get fixes, how to report something privately, and — the part most people actually
 need — what the app protects you from and what it doesn't.
 
 ## Supported versions
 
-Only the **latest release**. Releases are semver tags (`v1.0.0` → `v1.2.3`, see
-[CHANGELOG.md](CHANGELOG.md)); there is no LTS or maintenance branch and older tags are never
-patched. A fix ships in the next release and in the `latest` images on both registries.
+Only the newest commit on `main`. There are no releases or maintenance branches yet, and no
+prebuilt images: every instance is built from source.
 
 Updating a self-hosted instance:
 
 ```bash
-git pull && docker compose pull && docker compose up -d
+git pull && docker compose up -d --build
 ```
 
 ## Reporting a vulnerability
 
-Use GitHub's private vulnerability reporting:
-<https://github.com/DuarteSantos8/openGym/security/advisories/new>. The report is visible only to
-you and the maintainer, and it becomes the advisory thread where the fix is discussed and, once
-released, published.
-
-If you can't use GitHub, ask for an e-mail address on the
-[Discord](https://discord.gg/e62jY6fwVb) without giving any details, and you'll get one back within
-a couple of days.
+Use GitHub's private vulnerability reporting on the repository:
+<https://github.com/Sosoisworking/openGym/security/advisories/new>. The report is visible only to
+you and the maintainer, and it becomes the thread where the fix is discussed.
 
 Please don't put a working exploit in a public issue if it can be used against other people's
-instances, and not in the Discord either, which is a public room. Everything else (a crash you can
-only trigger on your own box, a scanner warning) is fine as a normal issue.
+instances. Everything else (a crash you can only trigger on your own box, a scanner warning) is
+fine as a normal issue.
 
-Useful in a report: the version or commit, whether you're running the prebuilt images or a
-source build, your `RP_ID`/`ORIGIN` and what sits in front of the app, steps to reproduce, and
-what an attacker gets out of it.
+Useful in a report: the commit, your `RP_ID`/`ORIGIN` and what sits in front of the app, steps to
+reproduce, and what an attacker gets out of it.
 
-**On response times:** this is a hobby project maintained by one person alongside school. There
-is no SLA and no bounty. Expect days rather than hours, and longer during exam periods. If a
-week goes by with no reply, comment on the advisory thread — it's more likely to be a missed
-notification than a decision. If a report goes unfixed and you want to disclose publicly, say so
-in the thread; there's no objection, and no request to sit on it indefinitely.
+This is a personal project: there is no SLA and no bounty.
+
+Tarnished is a fork of [openGym](https://github.com/DuarteSantos8/openGym). A flaw that is also in
+openGym is worth reporting there too.
 
 ## In scope
 
@@ -57,8 +49,10 @@ in the thread; there's no objection, and no request to sit on it indefinitely.
   change a signed-in user's data.
 - **Shipped deployment config** — `docker-compose.yml`, `web/nginx.conf.template`, the two Dockerfiles:
   a default that exposes something a self-hoster wouldn't expect to be exposed.
-- **The published images** `registry.gitlab.com/duartesantos8/opengym/{api,web}` and
-  `ghcr.io/duartesantos8/opengym-{api,web}`.
+- **Calendar export** (`api/calendar-events.js`, `api/ics.js`, `api/google-calendar.js`):
+  reading a profile's calendar without its link, a link that keeps working after "Make a new
+  link", finishing someone else's Google consent with your account or the other way round, or
+  getting the server to write to a Google calendar other than the one it made.
 
 ## Out of scope
 
@@ -84,13 +78,13 @@ in the thread; there's no objection, and no request to sit on it indefinitely.
   in the clear. That is the documented trade of running without TLS, not a finding.
 - Scanner output with no working exploit, and `npm audit` findings in build-time
   devDependencies (Vite, Vitest, Capacitor CLI) that never reach a running instance.
-- The demo build on the website and GitHub Pages — it has no backend at all, everything stays in
-  that browser.
+- The calendar link itself: it is a bearer secret by design (a calendar app has no other way in),
+  so anyone holding it can read that calendar until a new one is made.
 - Third-party content: the exercise image/GIF dataset and the CDN it's fetched from.
 
 ## Security model
 
-Read this before hosting openGym for anyone other than yourself.
+Read this before hosting Tarnished for anyone other than yourself.
 
 ### What it does
 
@@ -219,7 +213,7 @@ Read this before hosting openGym for anyone other than yourself.
   encrypted there, with a key derived from `secret` in the same folder, so it is no safer from
   whoever holds the folder. Anyone who can read that folder — you,
   whoever holds the backups, whoever gets into the host — can read every user's data, and with
-  `secret` can mint a valid session cookie for any account. **If you host openGym for other
+  `secret` can mint a valid session cookie for any account. **If you host Tarnished for other
   people, they are trusting you exactly as much as they'd trust any server operator.** With the
   activity log on, `./data/audit.log` adds everyone's sign-in times to that — worth remembering
   before an archive of `./data` goes somewhere you don't run.

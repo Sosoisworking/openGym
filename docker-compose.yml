@@ -1,15 +1,14 @@
-name: opengym
+name: tarnished
 
 services:
   # Passkey auth + per-user data (Node, no framework).
-  # image: prebuilt (docker compose pull). build: from source (docker compose up --build).
+  # Built from this checkout: Tarnished publishes no prebuilt images (pull_policy: build).
   api:
-    image: ghcr.io/duartesantos8/opengym-api:latest
+    image: tarnished-api:local
+    pull_policy: build
     # Default target: no AI runtime, no AI dependency — the image every instance has always had.
     # To opt into the AI Coach, build the other target instead:
     #     API_TARGET=coach docker compose up --build api
-    # `--build` matters: with an `image:` also set, compose would otherwise pull the prebuilt
-    # default rather than build the coach one.
     build:
       context: ./api
       target: ${API_TARGET:-default}
@@ -35,7 +34,8 @@ services:
   # Builds the React frontend (multi-stage) and serves it, proxying /api → api
   # and the exercise animations, which are part of the image. Single origin for passkeys.
   web:
-    image: ghcr.io/duartesantos8/opengym-web:latest
+    image: tarnished-web:local
+    pull_policy: build
     build:
       context: .
       dockerfile: web/Dockerfile

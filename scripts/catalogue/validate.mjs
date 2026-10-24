@@ -48,7 +48,7 @@ export function validateCatalogue(dir) {
     if (typeof e.description !== 'string') say(file, '"description" must be text (may be empty)')
     if (!Array.isArray(e.instructions) || e.instructions.some(s => !isText(s))) say(file, '"instructions" must be a list of steps (text)')
     if (e.textSource !== 'exercisedb') {
-      // Text written for openGym follows the app's copy rules; the imported text is left as it came.
+      // Text written for Tarnished follows the app's copy rules; the imported text is left as it came.
       const texts = [e.name, e.description, ...(e.instructions || [])]
       if (texts.some(s => typeof s === 'string' && s.includes('—'))) say(file, 'no em dash (—) in exercise text, use a comma or a full stop')
       if (!e.description) say(file, '"description" is empty')
@@ -80,7 +80,8 @@ export function validateCatalogue(dir) {
 
   const i18n = {}
   const i18nDir = path.join(dir, 'i18n')
-  for (const f of fs.readdirSync(i18nDir).filter(f => f.endsWith('.json')).sort()) {
+  // Tarnished is English-only: catalogue/i18n was removed, and a missing folder means no packs.
+  if (fs.existsSync(i18nDir)) for (const f of fs.readdirSync(i18nDir).filter(f => f.endsWith('.json')).sort()) {
     const lang = f.slice(0, -5)
     const file = 'catalogue/i18n/' + f
     if (!LANGS.includes(lang)) { say(file, `unknown language, expected one of: ${LANGS.join(', ')}`); continue }

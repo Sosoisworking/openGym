@@ -1,23 +1,21 @@
-# Contributing to openGym
+# Working on Tarnished
 
-Thanks for taking a look. openGym is deliberately small and light on dependencies, and the aim is
-to keep it that way: easy to read, easy to self-host.
+Tarnished is small on purpose: easy to read, easy to self-host, light on dependencies. These are
+the house rules for keeping it that way.
 
 ## Project layout
 
 ```
 frontend/  React + Vite app (src/views, src/components, src/store, src/lib). Builds to static files.
            android/ and ios/ are the Capacitor shells for the standalone app (docs/MOBILE.md).
-api/       Backend: server.js on plain node:http, two dependencies (@simplewebauthn/server, web-push).
-           coach/ is the optional AI coach; openapi.yaml documents every route.
+api/       Backend: server.js on plain node:http. coach/ is the optional AI coach; openapi.yaml
+           documents every route; calendar-events.js, ics.js and google-calendar.js are the
+           calendar export (docs/GOOGLE_CALENDAR.md).
 web/       Multi-stage Dockerfile (builds the frontend, serves it with nginx) and the nginx template.
-mcp/       Optional read-only MCP server for LLM clients (Claude Desktop, Cursor, ...). Not in the
-           Docker build; it only runs when a client spawns it. See mcp/README.md.
-website/   The static project site at opengym.ch.
-kubernetes/ Example manifests (docs/SELF_HOSTING_KUBERNETES.md).
+mcp/       Optional read-only MCP server for LLM clients (Claude Desktop, Cursor, ...).
 docs/      User and operator guides (index: docs/README.md); docs/dev/ has feature design notes.
-catalogue/ The exercise catalogue: one JSON file per exercise, translations in i18n/, and the
-           licensed 180 px stills and animations in media/ (catalogue/README.md).
+catalogue/ The exercise catalogue: one JSON file per exercise, and the licensed 180 px stills and
+           animations in media/ (catalogue/README.md).
 ```
 
 ## Running for development
@@ -27,95 +25,40 @@ cp .env.example .env
 docker compose up -d --build      # api + web on :8080
 
 cd frontend && npm install && npm run dev   # hot reload, proxies /api to :3000
-cd frontend && npm test                     # training logic, locales, components
+cd frontend && npm test
 cd api && npm test
 cd mcp && npm test
 ```
 
+CI runs Node 22, the same as the Dockerfiles. On Node 25 or newer, Node's own `localStorage` gets
+in the way of the frontend tests; run them with `NODE_OPTIONS=--no-experimental-webstorage`.
+
 ## Guidelines
 
-- **Keep it dependency-light.** The frontend uses React, React Router and Zustand; `api/` has two
-  dependencies. A new dependency on either side is a hard sell.
-- **Match the style.** Small components, clear names, comments only where the *why* isn't obvious.
-  State lives in the Zustand store (`src/store`), pure helpers in `src/lib`. There is no linter or
-  formatter config, so follow the surrounding code.
-- **Don't commit** `data/`; it is gitignored. Don't add or replace anything in
-  `catalogue/media/`: the stills and animations are licensed from Gym visual, 180 px at most, and
-  not open to contributions (see [NOTICE.md](NOTICE.md)).
-- **Exercise fixes and translations go through `catalogue/`**, one JSON file per exercise and one
-  per language. [catalogue/README.md](catalogue/README.md) explains the fields and how the app is
-  built from them; don't edit the generated `frontend/src/lib/exercises-data.js` by hand.
-- **Click through what you touched**, including the workout flow, in a browser before opening a
-  pull request.
-- **Training logic gets a unit test.** Anything that decides what you lift next, or reads a logged
-  session back, belongs in a pure helper in `src/lib` with a test beside it. These rules are easy
-  to get subtly wrong and nearly impossible to check by clicking; the progression engine has had
-  real bugs that only a test caught.
-- **New UI strings go into every locale** in `frontend/src/locales/`. English is the source
-  language and has no file. `node scripts/check-locales.mjs` (run in CI) flags a key that is
-  missing, blank or has lost a `{n}` placeholder. Portuguese (Brazil) inherits from Portuguese
-  (Portugal) and has its own guard test.
+- **Keep it dependency-light.** The frontend uses React, React Router and Zustand; a new
+  dependency on either side needs a reason the existing code can't meet.
+- **Match the style.** Small components, clear names, comments that say *why*. State lives in the
+  Zustand store (`src/store`), pure helpers in `src/lib`. There is no linter or formatter config,
+  so follow the surrounding code.
+- **Colours come from the tokens** at the top of `frontend/src/index.css` (dark first, light
+  under `[data-theme="light"]`). A hard-coded colour in a component is almost always a bug in
+  light mode.
+- **Training logic gets a unit test.** Anything that decides what you lift next, reads a logged
+  session back, or counts a habit streak belongs in a pure helper in `src/lib` with a test beside
+  it. These rules are easy to get subtly wrong and nearly impossible to check by clicking.
+- **Synced data merges per entry.** New per-day or per-item data goes into a stamped map
+  (`STAMPED_MAPS` in `frontend/src/lib/sync-merge.js` and `api/sync-stamps.js`), with removals
+  written as stamped empty entries, so two devices editing at once keep both changes.
+- **English only.** The `t()` calls stay (they format and pluralise), but there are no other
+  language packs to update.
+- **Don't commit** `data/`, and don't add or replace anything in `catalogue/media/`: the stills
+  and animations are licensed from Gym visual for openGym and its non-commercial forks, 180 px at
+  most, and may not be fed to AI tools (see [NOTICE.md](NOTICE.md)).
+- **Click through what you touched** in a browser, the workout flow included, before calling it
+  done.
 
-## Using AI tools
+## Licence
 
-openGym itself is developed with Claude Code (see
-[How openGym is built](README.md#how-opengym-is-built)), and [`CLAUDE.md`](CLAUDE.md) holds the
-project context for it. You're welcome to use whatever tools you like for a pull request. The bar
-is the same either way: you understand the change, it's tested, and you can answer questions about
-it in review.
-
-## What CI does with your pull request
-
-<p align="center">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/ci-dark.png">
-  <img src="docs/diagrams/ci.png" alt="CI path: pull request on GitHub, GitHub Actions tests and image builds, review and merge into main, mirror workflow pushes to GitLab, GitLab CI builds the signed APK, images and SBOMs, GHCR images on release." width="280">
-</picture>
-</p>
-
-A pull request runs the three test suites and builds and boots both api image targets. The APK and
-the published images come from GitLab CI on the mirror, built from `main` after the merge. If your
-change needs an APK to be judged, say so in the pull request and a maintainer will run that build.
-A first-time contributor's workflows wait for a maintainer to approve them, so "no checks yet"
-just means nobody has pressed the button.
-
-Merge requests still open on the GitLab mirror are reviewed too and land on `main` here. New work
-should come as a GitHub pull request.
-
-## Good first issues
-
-- More starter plans
-- Exercise translations: any language in `catalogue/i18n/` with gaps, or a new one
-  (see [catalogue/README.md](catalogue/README.md#translating))
-- Percentage or training-max programming (5/3/1 style) on top of the progression engine in
-  `src/lib/progression.js`; the policy interface is already there
-- Accessibility passes on the workout and chart screens
-
-## Where to ask what
-
-| You have | Goes to |
-| --- | --- |
-| A quick question, or you'd rather chat | [Discord](https://discord.gg/e62jY6fwVb) |
-| A question, or self-hosting that won't behave | [Discussions → Q&A](https://github.com/DuarteSantos8/openGym/discussions/categories/q-a) |
-| An idea you're not sure about yet | [Discussions → Ideas](https://github.com/DuarteSantos8/openGym/discussions/categories/ideas) |
-| A reproducible bug | [Issues](https://github.com/DuarteSantos8/openGym/issues) |
-| A change you've already built | [A pull request](https://github.com/DuarteSantos8/openGym/pulls) |
-| A security problem | [Private report](https://github.com/DuarteSantos8/openGym/security/advisories/new), see [SECURITY.md](SECURITY.md) |
-
-An answered question in Discussions is worth more than the same answer in a chat log, because the
-next person searching "passkey login fails behind my reverse proxy" finds it. If a Discord answer
-turns out to be worth keeping, it belongs in Discussions afterwards.
-
-## Reporting bugs
-
-Open an issue with what you did, what you expected, what happened, and your browser and OS. For
-login or passkey problems, include your `RP_ID` and `ORIGIN` (not the contents of `data/`); most
-login issues are an origin mismatch.
-
-## Contributor License Agreement
-
-Before your first pull request is merged, you sign the [Contributor License Agreement](CLA.md) once,
-by commenting the sentence the CLA check asks for on your pull request. It covers all your past and
-future contributions. You keep the copyright in your work; openGym may use and relicense it, which
-is what keeps the app possible in the App Store and Google Play long term. Every version released
-under the [GNU AGPL v3.0](LICENSE) stays available under it.
+Tarnished is a fork of [openGym](https://github.com/DuarteSantos8/openGym) by Duarte Santos and
+stays under the [GNU AGPL v3](LICENSE): anyone you host it for can ask for the source, and changes
+stay open. The third-party pieces and their licences are in [NOTICE.md](NOTICE.md).

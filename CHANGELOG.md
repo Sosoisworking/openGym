@@ -1,5 +1,28 @@
 # Changelog
 
+## Tarnished (unreleased)
+
+Tarnished starts here, as a fork of openGym v1.4.1. Everything below this section is openGym's
+history, kept as it was.
+
+- **A new name and look.** Tarnished, with a mossy-kettlebell logo and a dark-first earth palette
+  (umber, bone, slate, rust and moss) and a light theme on parchment. The accent colours are earth
+  tones now: moss, slate, ember, heather, clay, rust, verdigris and brass.
+- **Habits.** Add a habit in the field on Home, tick it off once a day and it's struck through.
+  Streaks, five weeks of history on the Habits screen, and gym and everyday ideas to start from.
+- **A calendar that shows everything.** Home's calendar switches between the week and the whole
+  month; each day shows what you trained, what's planned and a coloured dot per habit done. Tap a
+  day for its workout, plan, weigh-in and habits, and tick past days there.
+- **Calendar sync.** Settings → Calendar sync sends workouts, the plan ahead and habits to Google
+  Calendar (a calendar of its own, nothing else touched) or to any calendar app through a private
+  subscription link. Setup in docs/GOOGLE_CALENDAR.md.
+- **English only.** The translations are gone, which keeps every new feature in one language.
+- **Fixed: the calendar opened on the month before** for anyone west of UTC, when opened on a
+  particular day (it read the date as UTC midnight).
+- **Builds from source.** `docker compose up -d --build` builds Tarnished itself; the compose file
+  no longer pulls openGym's published images. The website, the GitLab and Gitea CI, the CLA, the
+  Kubernetes, Helm and Nix packaging, and the in-app link to openGym's download page are gone.
+
 ## v1.4.1 (2026-10-10)
 
 Bug fixes for v1.4.0, mostly the things you told us about on Discord and GitHub.

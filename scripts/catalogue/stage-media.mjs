@@ -6,7 +6,7 @@
 //                                                                        Android package: larger animations
 //   VITE_CLIP_EXT=webp APP_MEDIA_DIR=/private/app-webp ...              ... as animated WebP (the release)
 //
-// The media are licensed from Gym visual for openGym only (catalogue/media/NOTICE.md). 180 px is
+// The media are licensed from Gym visual for Tarnished only (catalogue/media/NOTICE.md). 180 px is
 // what may sit in the repository, a website or a self-hosted server; anything larger may only
 // ever end up inside a compiled app package, so APP_MEDIA_DIR is set by the release build alone
 // and points at the maintainer's private copy, never at anything in this repository.
