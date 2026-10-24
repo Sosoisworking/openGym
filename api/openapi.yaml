@@ -1,15 +1,15 @@
-# openGym HTTP API: hand-written OpenAPI 3.1 spec.
+# Tarnished HTTP API: hand-written OpenAPI 3.1 spec.
 # Source of truth: api/server.js (a single framework-free Node file). Every route the
 # server registers is documented here; if you add a route there, add it here too.
 # Browsable version: https://opengym.ch/api.html
 openapi: 3.1.0
 
 info:
-  title: openGym API
+  title: Tarnished API
   version: 1.4.1
-  summary: Passkey (WebAuthn) auth + per-user state storage for openGym
+  summary: Passkey (WebAuthn) auth + per-user state storage for Tarnished
   description: |
-    The backend of [openGym](https://opengym.ch), a free, open-source
+    The backend of [Tarnished](https://opengym.ch), a free, open-source
     gym & body-weight tracker. A plain Node server, no framework, JSON-file storage,
     HMAC-signed session cookies.
 
@@ -115,12 +115,12 @@ info:
     name: AGPL-3.0-or-later
     identifier: AGPL-3.0-or-later
   contact:
-    name: openGym
-    url: https://gitlab.com/DuarteSantos8/opengym
+    name: Tarnished
+    url: https://github.com/Sosoisworking/openGym
 
 servers:
   - url: /
-    description: Same origin as the openGym web app (the normal deployment)
+    description: Same origin as the Tarnished web app (the normal deployment)
   - url: https://opengym.example.com
     description: Your self-hosted instance
 
@@ -153,6 +153,12 @@ tags:
       attached to a logged workout. Stored per profile (one quota for both) and named
       by the SHA-256 of its bytes; the state only carries a `MediaRef`. Every route here is a
       404 when the instance runs with `MEDIA_UPLOADS=0`.
+  - name: calendar
+    description: >-
+      The profile's workouts, planned sessions and habits in a calendar app: a secret
+      subscription link (iCalendar) that any calendar can read, and an optional sync into a
+      Google Calendar of its own. The Google routes answer 404 unless the instance has a Google
+      OAuth client (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`); see docs/GOOGLE_CALENDAR.md.
   - name: coach
     description: >-
       AI Coach: plans, reviews and debriefs. Every route here answers 503 unless the
@@ -1831,6 +1837,192 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
               example: { error: "too many uploads, try again later", code: "locked", retryAfter: 1200 }
+
+  /api/calendar/feed:
+    get:
+      tags: [calendar]
+      operationId: calendarFeedGet
+      summary: The profile's calendar subscription link
+      description: >-
+        The secret iCalendar URL of the caller's profile, or `null` when none was made yet.
+      responses:
+        '200':
+          description: The link, or null.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url]
+                properties:
+                  url: { type: string, format: uri, nullable: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [calendar]
+      operationId: calendarFeedNew
+      summary: Make a new subscription link
+      description: >-
+        A new secret link for the caller's profile. Any link made before stops working, which is
+        how one shared by mistake is taken back.
+      responses:
+        '200':
+          description: The new link.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url]
+                properties:
+                  url: { type: string, format: uri }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      tags: [calendar]
+      operationId: calendarFeedDelete
+      summary: Turn the subscription link off
+      responses:
+        '200':
+          description: The link no longer answers.
+          content:
+            application/json:
+              schema: { type: object, properties: { ok: { type: boolean } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/calendar/{token}.ics:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        description: The secret from the subscription link, 32 to 64 URL-safe characters.
+        schema: { type: string, pattern: '^[A-Za-z0-9_-]{32,64}$' }
+    get:
+      tags: [calendar]
+      operationId: calendarFeed
+      summary: The profile as an iCalendar file
+      description: >-
+        No session: the link is the credential, as a calendar app has no other. Workouts of the
+        last 90 days at the time they were trained, the planned session of each of the next 14
+        days that has nothing logged yet (all day), and each of the last 30 days with a habit
+        ticked (all day), as far as the profile's `calSync` choices let them out. Event UIDs stay
+        the same for the same workout or day, so a calendar that reads the file again updates
+        rather than duplicates. An unknown token answers 404.
+      security: []
+      responses:
+        '200':
+          description: The calendar.
+          content:
+            text/calendar:
+              schema: { type: string }
+        '404': { description: No such link. }
+
+  /api/google/status:
+    get:
+      tags: [calendar]
+      operationId: googleStatus
+      summary: Google Calendar connection of the caller
+      description: >-
+        `enabled` is whether this instance can connect to Google at all. Once connected:
+        when the last sync ran, the last failure, how many events are kept, and a link that opens
+        the Tarnished calendar in Google Calendar. `revoked` means Google no longer lets the
+        instance in (the access was taken back in the Google account): connect again.
+      responses:
+        '200':
+          description: The connection.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [enabled, connected]
+                properties:
+                  enabled: { type: boolean }
+                  connected: { type: boolean }
+                  revoked: { type: boolean }
+                  connectedAt: { type: integer, nullable: true }
+                  lastSync: { type: integer, nullable: true }
+                  lastError: { type: string, nullable: true }
+                  events: { type: integer }
+                  calendarUrl: { type: string, format: uri, nullable: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/google/connect:
+    post:
+      tags: [calendar]
+      operationId: googleConnect
+      summary: Start connecting Google Calendar
+      description: >-
+        The Google consent URL to send the browser to. It asks for `calendar.app.created` only:
+        the instance can make calendars of its own and manage their events, and cannot see or
+        change any other calendar. `tz` (an IANA zone) is the new calendar's time zone.
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, properties: { tz: { type: string } } }
+      responses:
+        '200':
+          description: Where to go.
+          content:
+            application/json:
+              schema: { type: object, required: [url], properties: { url: { type: string, format: uri } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: 'No Google client on this instance (`not-configured`).' }
+
+  /api/google/callback:
+    get:
+      tags: [calendar]
+      operationId: googleCallback
+      summary: Google's redirect back after consent
+      description: >-
+        Not called by the app: Google sends the browser here. Always a 302 to the app's calendar
+        settings with `google=connected`, `denied`, `failed` or `not-configured`. The signed
+        `state` names who started the flow; a browser signed in as someone else does not finish
+        it. Connecting makes the "Tarnished" calendar and starts a first sync.
+      security: []
+      parameters:
+        - { in: query, name: code, schema: { type: string } }
+        - { in: query, name: state, required: true, schema: { type: string } }
+        - { in: query, name: error, schema: { type: string } }
+      responses:
+        '302': { description: Back to the app. }
+
+  /api/google/sync:
+    post:
+      tags: [calendar]
+      operationId: googleSync
+      summary: Sync with Google Calendar now
+      description: >-
+        Sends what changed since the last sync and removes what is gone. A sync also runs on its
+        own shortly after every save of the profile and every six hours.
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  sent: { type: integer }
+                  removed: { type: integer }
+                  unchanged: { type: integer }
+                  status: { type: object }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: 'No Google client on this instance (`not-configured`).' }
+        '409': { description: 'Not connected (`not-connected`), or the access was taken back in Google (`revoked`).' }
+        '502': { description: Google refused or could not be reached; `status.lastError` says why. }
+
+  /api/google/disconnect:
+    post:
+      tags: [calendar]
+      operationId: googleDisconnect
+      summary: Disconnect Google Calendar
+      description: >-
+        Hands the access back to Google and forgets it. The Tarnished calendar and its events
+        stay in the Google account, to keep or delete there.
+      responses:
+        '200':
+          description: Disconnected.
+          content:
+            application/json:
+              schema: { type: object, properties: { ok: { type: boolean } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
 
   /api/push/public-key:
     get:

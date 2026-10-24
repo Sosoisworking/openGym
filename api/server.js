@@ -1,4 +1,4 @@
-/* opengym-api — passkey (WebAuthn) auth + per-user state storage for openGym
+/* opengym-api — passkey (WebAuthn) auth + per-user state storage for Tarnished
    No framework, JSON-file storage, signed session cookies.               */
 import http from 'node:http';
 import crypto from 'node:crypto';
@@ -35,12 +35,15 @@ import { effectiveRoutineId } from './queue.js';
 import { stampPut } from './sync-stamps.js';
 import { atomicWrite as durableWrite } from './durable.js';
 import { excusedOn, nudgeFor, nudgeWindowOpen, toneOf } from './nudge.js';
+import { calendarEvents, calSyncPrefs, todayIn } from './calendar-events.js';
+import { toICS } from './ics.js';
+import { createGoogleCalendar, GoogleError } from './google-calendar.js';
 
 const PORT = +(process.env.PORT || 3000);
 const DATA = process.env.DATA_DIR || '/data';
 const RP_ID = process.env.RP_ID || 'localhost';
 const ORIGIN = process.env.ORIGIN || 'http://localhost:8080';
-const RP_NAME = process.env.RP_NAME || 'openGym';
+const RP_NAME = process.env.RP_NAME || 'Tarnished';
 // Admin dashboard (issue): admins are matched by uid (or the admin flag FIRST_USER_ADMIN sets);
 // INVITE_ONLY gates new signups behind a code the admin generates. Off by default, so a fresh
 // self-hosted instance stays open.
@@ -1759,6 +1762,47 @@ const passkeyRoutes = {
 const MEDIA_LIMITS = mediaLimits(process.env);
 const MEDIA_ON = MEDIA_LIMITS.enabled;
 const MEDIA = createMediaStore({ dir: path.join(DATA, 'uploads'), limits: MEDIA_LIMITS, readState });
+
+/* ---------- calendar: subscription link + Google Calendar sync ---------- */
+// Off unless the instance has its own Google OAuth client (docs/GOOGLE_CALENDAR.md). The redirect
+// URI has to be registered on that client exactly as it is here. The *_URL overrides exist for
+// the tests, which point them at a fake Google.
+const GOOGLE = createGoogleCalendar({
+  dataDir: DATA,
+  clientId: process.env.GOOGLE_CLIENT_ID || '',
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+  redirectUri: process.env.GOOGLE_REDIRECT_URI || ORIGIN.replace(/\/+$/, '') + '/api/google/callback',
+  ...(process.env.GOOGLE_AUTH_URL ? { authUrlBase: process.env.GOOGLE_AUTH_URL } : {}),
+  ...(process.env.GOOGLE_TOKEN_URL ? { tokenUrl: process.env.GOOGLE_TOKEN_URL } : {}),
+  ...(process.env.GOOGLE_REVOKE_URL ? { revokeUrl: process.env.GOOGLE_REVOKE_URL } : {}),
+  ...(process.env.GOOGLE_API_BASE ? { apiBase: process.env.GOOGLE_API_BASE } : {}),
+  syncDelayMs: Math.max(0, +(process.env.GOOGLE_SYNC_DELAY_MS ?? 20000) || 0),
+  readState,
+});
+if (GOOGLE.enabled) {
+  // The plan's two weeks ahead move on with the days, whether or not anyone saved anything.
+  setInterval(() => GOOGLE.tick(), 6 * 3600000).unref();
+  setTimeout(() => GOOGLE.tick(), 60000).unref();
+}
+// The consent round trip carries who asked in `state`, signed with a key of its own so a state can
+// never pass for a session token (sign() above) or the other way round.
+const stateKey = crypto.createHmac('sha256', SECRET).update('google-oauth-state').digest();
+const signState = payload => payload + '.' + crypto.createHmac('sha256', stateKey).update(payload).digest('base64url');
+function verifyState(token) {
+  const i = String(token || '').lastIndexOf('.');
+  if (i < 0) return null;
+  const payload = token.slice(0, i), mac = Buffer.from(token.slice(i + 1));
+  const expect = Buffer.from(crypto.createHmac('sha256', stateKey).update(payload).digest('base64url'));
+  return mac.length === expect.length && crypto.timingSafeEqual(mac, expect) ? payload : null;
+}
+const CAL_TOKEN = /^[A-Za-z0-9_-]{32,64}$/;
+const feedUrl = token => ORIGIN.replace(/\/+$/, '') + '/api/calendar/' + token + '.ics';
+function userByFeedToken(token) {
+  if (!CAL_TOKEN.test(token)) return null;
+  const want = Buffer.from(token);
+  return db.users.find(u => typeof u.calToken === 'string' && u.calToken.length === token.length && crypto.timingSafeEqual(Buffer.from(u.calToken), want)) || null;
+}
+const settingsUrl = q => ORIGIN.replace(/\/+$/, '') + '/#/settings/calendar?' + q;
 // Leftovers of uploads the previous process was receiving when it stopped.
 try { MEDIA.cleanTmp(); } catch (e) { console.error('media: boot cleanup failed', e.message); }
 // Per profile, not per address: every upload is signed in, and behind a proxy one address can be
@@ -1941,7 +1985,9 @@ const routes = {
       // Public like the two flags above: the caps are not a secret, and the absence of the
       // block is how the app knows this server does not take photos and videos at all.
       ...(MEDIA_ON ? { media: mediaConfig(MEDIA_LIMITS) } : {}),
-      ...(readSession(req) ? { coach: coachConfig.publicConfig() } : {})
+      ...(readSession(req) ? { coach: coachConfig.publicConfig() } : {}),
+      // Whether "Connect Google Calendar" can work here; the subscription link always can.
+      ...(readSession(req) && GOOGLE.enabled ? { google_calendar: true } : {})
     });
   },
 
@@ -2287,7 +2333,106 @@ const routes = {
     if (MEDIA_ON) {
       try { MEDIA.noteState(user.id, body.state); } catch (e) { console.error('media noteState', e); }
     }
+    // The Google calendar follows, a little after the last of a burst of saves.
+    if (GOOGLE.enabled) GOOGLE.schedule(user.id);
     json(res, 200, { ok: true, ts: body.state._ts || null, rev: curRev + 1, wid: body.state._wid });
+  },
+
+  // ---- calendar ----
+  // The subscription link: a secret URL any calendar app can read the profile from (ics.js). One
+  // per profile; making a new one is how an old one shared by mistake stops working.
+  'GET /api/calendar/feed': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    json(res, 200, { url: user.calToken ? feedUrl(user.calToken) : null });
+  },
+  'POST /api/calendar/feed': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    user.calToken = crypto.randomBytes(24).toString('base64url');
+    saveDb();
+    audit(req, 'calendar.feed.new', { user });
+    json(res, 200, { url: feedUrl(user.calToken) });
+  },
+  'DELETE /api/calendar/feed': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    delete user.calToken;
+    saveDb();
+    json(res, 200, { ok: true });
+  },
+  // No session: the link is the credential, as a calendar app has no other. A token nobody holds
+  // answers exactly like a missing page.
+  'GET /api/calendar/{token}.ics': async (req, res) => {
+    const user = userByFeedToken(req.calToken);
+    if (!user) return json(res, 404, { error: 'not found' });
+    const S = readState(user.id) || {};
+    const prefs = calSyncPrefs(S);
+    const body = toICS(calendarEvents(S, { today: todayIn(prefs.tz), prefs }), { name: 'Tarnished' });
+    res.writeHead(200, {
+      'Content-Type': 'text/calendar; charset=utf-8', 'Cache-Control': 'private, max-age=900',
+      'Content-Disposition': 'inline; filename="tarnished.ics"', 'X-Robots-Tag': 'noindex',
+    });
+    res.end(body);
+  },
+
+  // Google Calendar (google-calendar.js). Every route but status answers 404 while the instance
+  // has no Google client, and status says `enabled: false`.
+  'GET /api/google/status': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    json(res, 200, GOOGLE.enabled ? GOOGLE.status(user.id) : { enabled: false, connected: false });
+  },
+  'POST /api/google/connect': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    if (!GOOGLE.enabled) return json(res, 404, { error: 'Google Calendar is not set up on this server', code: 'not-configured' });
+    const body = await readBody(req);
+    const tz = typeof body.tz === 'string' && /^[A-Za-z_+\-/0-9]{1,64}$/.test(body.tz) ? body.tz : 'UTC';
+    json(res, 200, { url: GOOGLE.authUrl(signState(['g', user.id, Date.now() + 10 * 60000, tz].join('|'))) });
+  },
+  // Where Google sends the browser back: a top-level GET, so it answers with a redirect to the
+  // app's calendar settings, which read the outcome off `google=`.
+  'GET /api/google/callback': async (req, res) => {
+    const go = q => { res.writeHead(302, { Location: settingsUrl(q), 'Cache-Control': 'no-store' }); res.end(); };
+    if (!GOOGLE.enabled) return go('google=not-configured');
+    const q = new URL(req.url, 'http://x').searchParams;
+    const payload = verifyState(q.get('state'));
+    const [tag, uid, exp, tz] = (payload || '').split('|');
+    const user = tag === 'g' && +exp > Date.now() ? db.users.find(u => u.id === uid) : null;
+    // A browser signed in as someone else than who started this does not finish it.
+    const signedIn = readSession(req);
+    if (!user || (signedIn && signedIn.id !== user.id)) return go('google=failed');
+    if (q.get('error')) return go('google=denied');
+    try {
+      await GOOGLE.connect(user.id, q.get('code') || '', tz);
+      audit(req, 'calendar.google.connect', { user });
+      GOOGLE.schedule(user.id, 0);
+      go('google=connected');
+    } catch (e) {
+      console.warn('google connect', user.id, e.message);
+      go('google=failed');
+    }
+  },
+  'POST /api/google/sync': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    if (!GOOGLE.enabled) return json(res, 404, { error: 'Google Calendar is not set up on this server', code: 'not-configured' });
+    try {
+      const done = await GOOGLE.sync(user.id, readState(user.id));
+      if (!done) return json(res, 409, { error: 'not connected to Google Calendar', code: 'not-connected' });
+      json(res, 200, { ok: true, ...done, status: GOOGLE.status(user.id) });
+    } catch (e) {
+      if (!(e instanceof GoogleError)) throw e;
+      json(res, e.status === 409 ? 409 : 502, { error: e.message, code: e.code, status: GOOGLE.status(user.id) });
+    }
+  },
+  'POST /api/google/disconnect': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    if (GOOGLE.enabled) await GOOGLE.disconnect(user.id);
+    audit(req, 'calendar.google.disconnect', { user });
+    json(res, 200, { ok: true });
   },
 
   'GET /api/push/public-key': async (req, res) => json(res, 200, { key: vapid.publicKey }),
@@ -2488,6 +2633,8 @@ const routes = {
     // The training history and any Coach credential of theirs, both outside db.json.
     try { fs.unlinkSync(stateFile(u.id)); } catch { /* already gone */ }
     try { coachConfig.clearProfileAuth(u.id); } catch { /* nothing stored */ }
+    // Their Google Calendar link: the access handed back to Google, the token file gone.
+    GOOGLE.disconnect(u.id).catch(e => console.warn('google disconnect', u.id, e.message));
     // Their photos and videos — the one place a profile's folder under uploads/ is removed.
     try { MEDIA.removeUser(u.id); } catch (e) { console.error('media: could not remove uploads of', u.id, e.message); }
     saveDb();
@@ -2658,6 +2805,8 @@ const server = http.createServer(async (req, res) => {
   // above stays a plain lookup, and so csrfOk and the catch-all see one name for every file.
   const mm = /^\/api\/media\/([0-9a-f]{64})$/.exec(url.pathname);
   if (mm) { key = req.method + ' /api/media/{hash}'; req.mediaHash = mm[1]; }
+  const cm = /^\/api\/calendar\/([A-Za-z0-9_-]{32,64})\.ics$/.exec(url.pathname);
+  if (cm) { key = req.method + ' /api/calendar/{token}.ics'; req.calToken = cm[1]; }
   const handler = routes[key];
   if (!handler) return json(res, 404, { error: 'not found' });
   if (!csrfOk(req, key)) {

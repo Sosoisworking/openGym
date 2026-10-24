@@ -100,13 +100,9 @@ test('push text: by tone, one line per date, routine name filled in, localized',
       }
     }
   }
-  assert.equal(nudgePush('de', 'drill', null, iso).title, 'Achtung, Rekrut!');
-  assert.equal(nudgePush('pt-BR', 'friendly', null, iso).title, 'Está tudo bem?');
-  // unknown language and tone fall back to English and friendly; de-CH writes ss
+  // Tarnished is English-only: any other language, and an unknown tone, read as English and friendly
+  assert.deepEqual(nudgePush('de', 'mean', { name: 'A' }, iso), nudgePush('en', 'friendly', { name: 'A' }, iso));
   assert.deepEqual(nudgePush('xx', 'mean', { name: 'A' }, iso), nudgePush('en', 'friendly', { name: 'A' }, iso));
-  for (const tone of ['friendly', 'guilt', 'drill']) {
-    for (let d = 0; d < 4; d++) assert.doesNotMatch(nudgePush('de-CH', tone, { name: 'A' }, `2026-09-0${d + 1}`).body, /ß/);
-  }
   // a name with $-patterns is inserted literally
   assert.match(nudgePush('en', 'friendly', { name: '$& $1' }, '2026-09-04').body + nudgePush('en', 'friendly', { name: '$& $1' }, '2026-09-05').body, /\$& \$1/);
 });

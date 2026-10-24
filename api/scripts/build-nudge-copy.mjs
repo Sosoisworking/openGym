@@ -16,7 +16,9 @@ const OUT = path.join(API, 'nudge-copy.js');
 
 export async function buildNudgeCopy() {
   const { NUDGE_COPY } = await import(pathToFileURL(path.join(FRONT, 'lib', 'nudge.js')));
-  const langs = fs.readdirSync(path.join(FRONT, 'locales')).filter(f => /^[a-zA-Z-]+\.js$/.test(f)).map(f => f.slice(0, -3)).sort();
+  // English only while the app ships no other language (frontend/src/locales is gone).
+  const dir = path.join(FRONT, 'locales');
+  const langs = !fs.existsSync(dir) ? [] : fs.readdirSync(dir).filter(f => /^[a-zA-Z-]+\.js$/.test(f)).map(f => f.slice(0, -3)).sort();
   const copy = { en: NUDGE_COPY };
   for (const lang of langs) {
     const pack = (await import(pathToFileURL(path.join(FRONT, 'locales', lang + '.js')))).default;
