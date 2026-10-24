@@ -18,13 +18,16 @@ import anthropic from '../core/adapters/anthropic.js';
 import openai from '../core/adapters/openai.js';
 import gemini from '../core/adapters/gemini.js';
 import compatible from '../core/adapters/compatible.js';
+import { fileURLToPath } from 'node:url';
 
 /**
  * The in-repo fake provider. Ships with the image on purpose: it is what CI drives, and it
  * lets an instance owner see the entire Coach loop — intake, proposal, apply, revert —
  * before deciding whether to connect a real account to it.
  */
-const FIXTURE = new URL('../fixture-cli.mjs', import.meta.url).pathname;
+// fileURLToPath, not .pathname: a checkout under a folder with a space in its name ("Claude Projects")
+// left %20 in the path and the fixture provider could not be found.
+const FIXTURE = fileURLToPath(new URL('../fixture-cli.mjs', import.meta.url));
 const fixture = {
   id: 'fixture',
   spawns: true,
