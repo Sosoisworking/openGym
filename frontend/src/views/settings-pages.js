@@ -13,7 +13,8 @@ export const PAGES = {
   alerts: { title: 'Timer alerts', icon: 'speaker', tint: 'var(--pink)' },
   reminders: { title: 'Reminders', icon: 'bell', tint: 'var(--red)' },
   plan: { title: 'Plan & schedule', icon: 'calendar', tint: 'var(--orange)' },
-  units: { title: 'Units & language', icon: 'ruler', tint: 'var(--teal)' },
+  calendar: { title: 'Calendar sync', icon: 'calendar', tint: 'var(--blue)' },
+  units: { title: 'Units', icon: 'ruler', tint: 'var(--teal)' },
   equipment: { title: 'Equipment', icon: 'kettlebell', tint: 'var(--indigo)' },
   look: { title: 'Look & Home', icon: 'palette', tint: 'var(--purple)' },
   coach: { title: 'AI Coach', icon: 'sparkles', tint: 'var(--green)' },
@@ -25,7 +26,7 @@ export const PAGES = {
 export const PAGE_IDS = Object.keys(PAGES)
 
 // The root, top to bottom. Whether a row shows is pageVisible's call.
-export const ROOT_GROUPS = [['workout', 'alerts', 'reminders'], ['plan', 'units', 'equipment'], ['look', 'coach'], ['data', 'about']]
+export const ROOT_GROUPS = [['workout', 'alerts', 'reminders'], ['plan', 'calendar', 'units', 'equipment'], ['look', 'coach'], ['data', 'about']]
 
 /**
  * Whether a page exists for this device and profile. Reminders need a push server (signed in) or
@@ -35,6 +36,8 @@ export const ROOT_GROUPS = [['workout', 'alerts', 'reminders'], ['plan', 'units'
 export function pageVisible(page, ctx) {
   if (page === 'reminders') return !!(ctx.user || ctx.mobile)
   if (page === 'coach') return !!ctx.mobile
+  // Both ways to a calendar app run on the server.
+  if (page === 'calendar') return !!ctx.user
   return page in PAGES
 }
 
@@ -88,10 +91,12 @@ export const SEARCH = [
   { page: 'plan', title: 'How you train', icon: 'repeat', tint: 'var(--orange)', kw: 'scheduling schedule rotation fixed week split loop round cycle', opts: ['Fixed Week', 'Rotation'] },
   { page: 'plan', title: 'Week starts on', icon: 'calendar', tint: 'var(--orange)', kw: 'monday sunday first day week', opts: ['Monday', 'Sunday'], tkw: () => t('week start') },
   { page: 'plan', title: 'Load starter plan', icon: 'clipboard', tint: 'var(--green)', kw: 'starter template beginner program routine' },
-  // Units & language
-  { page: 'units', title: 'Language', icon: 'globe', tint: 'var(--blue)', kw: 'language translation idioma sprache langue lingua' },
-  { page: 'units', title: 'English exercise names', icon: 'globe', tint: 'var(--purple)', kw: 'exercise names english translation', when: c => c.nameLang },
-  { page: 'units', title: 'English names only', icon: 'globe', tint: 'var(--purple)', kw: 'exercise names english translation', when: c => c.nameLang },
+  // Calendar sync (components/CalendarSync.jsx): signed in only, as both ways out run on the server.
+  // The Google and link rows depend on the server's answer, so the always-there switches carry
+  // their words for the search.
+  { page: 'calendar', title: 'Workouts', icon: 'dumbbell', tint: 'var(--green)', kw: 'calendar google gcal ics ical webcal subscribe sync workouts export', when: c => !!c.user },
+  { page: 'calendar', title: 'Planned sessions', icon: 'calendar', tint: 'var(--orange)', kw: 'calendar google plan sync', when: c => !!c.user },
+  // Units
   { page: 'units', title: 'Weight unit', icon: 'scale', tint: 'var(--teal)', kw: 'kg lb lbs pounds kilos kilograms unit' },
   { page: 'units', title: 'Weight decimals', icon: 'ruler', tint: 'var(--teal)', kw: 'decimals precision microplates rounding' },
   { page: 'units', title: 'Speed unit', icon: 'figureRun', tint: 'var(--teal)', kw: 'speed mph kmh km/h miles cardio' },
@@ -109,6 +114,7 @@ export const SEARCH = [
   { page: 'look', title: 'Exercise drawings', icon: 'figureStrength', tint: 'var(--teal)', kw: 'figure male female woman man picture', opts: ['Male', 'Female'] },
   { page: 'look', title: 'Gym check-in', icon: 'qr', tint: 'var(--blue)', kw: 'qr code membership card check in barcode' },
   { page: 'look', title: 'Body weight', icon: 'scale', tint: 'var(--green)', kw: 'weight card home' },
+  { page: 'look', title: 'Habits', icon: 'checkCircle', tint: 'var(--green)', kw: 'habits habit tracker card home streak' },
   { page: 'look', title: 'Show connection status', icon: 'cloud', tint: 'var(--blue)', kw: 'sync offline banner bar connection', when: c => !c.demo },
   // Data & backup
   { page: 'data', title: 'Export backup (JSON)', icon: 'share', tint: 'var(--blue)', kw: 'export backup json download save' },
@@ -164,7 +170,7 @@ export function pageTrail(page, tr = t) {
  * Settings rows matching a query, best first: every word of the query has to appear in the
  * row's title, its page, or its extra words (in English and in the app's language). A title
  * that starts with the query ranks first, then a title containing it, then the rest. Pages
- * themselves are hits too ("units" finds Units & language).
+ * themselves are hits too ("units" finds Units).
  */
 export function searchSettings(query, ctx, tr = t) {
   const words = fold(query).trim().split(/\s+/).filter(Boolean)

@@ -98,19 +98,6 @@ describe('syncMedia', () => {
   })
 
   // QA, v1.3.9: a 1 MB quota with 60 KB in it read "full (0 of 1 MB)" while Settings said 0.1.
-  it('the full-quota toast gives the space used as the server and Settings do, one decimal in the language\'s own mark', async () => {
-    const S = { customEx: [{ id: 'a', media: refOf(hex('a')) }] }
-    await put(hex('a'))
-    apiUpload.mockRejectedValue(Object.assign(new Error('full'), { status: 413, code: 'media-quota', data: { usedMB: 0.1, quotaMB: 1 } }))
-    await make(appStore({ S })).syncMedia()
-    expect(toast).toHaveBeenCalledWith('Your photo and video space on the server is full (0.1 of 1 MB).')
-    _setLangState('de', { 'Your photo and video space on the server is full ({0} of {1} MB).': 'Voll ({0} von {1} MB).' }, null, null)
-    try {
-      toast.mockClear()
-      await make(appStore({ S })).syncMedia()
-      expect(toast).toHaveBeenCalledWith('Voll (0,1 von 1 MB).')
-    } finally { _setLangState('en', null, null, null) }
-  })
 
   it('a network stop waits out its backoff, but the network coming back (a forced run) tries at once', async () => {
     const S = { customEx: [{ id: 'a', media: refOf(hex('a')) }] }

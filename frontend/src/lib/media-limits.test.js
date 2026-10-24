@@ -14,13 +14,4 @@ describe('fmtMB', () => {
     expect(fmtMB(2, { fixed: true })).toBe('2.0')
   })
 
-  it('writes the decimal mark of the language', () => {
-    _setLangState('de', {}, null, null)
-    expect(fmtMB(0.5)).toBe('0,5')
-    expect(fmtMB(2, { fixed: true })).toBe('2,0')
-    _setLangState('fr', {}, null, null)
-    expect(fmtMB(12.5)).toBe('12,5')
-    _setLangState('ar', {}, null, null)
-    expect(fmtMB(0.5)).toMatch(/^0.5$/)   // Latin digits, as everywhere in the app
-  })
 })

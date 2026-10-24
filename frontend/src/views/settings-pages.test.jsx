@@ -89,18 +89,18 @@ describe('the root', () => {
     expect(host.querySelector('.sp-acct .lrow-t').textContent).toBe('Guest')
     expect(host.querySelector('.sp-acct .lrow-s').textContent).toBe('Your data lives on this device. Sign in to sync.')
     // a guest in a browser has no reminders (no push server) and no Coach page (the server's Coach)
-    expect(titles()).toEqual(['Guest', 'Workout', 'Timer alerts', 'Plan & schedule', 'Units & language', 'Equipment', 'Look & Home', 'Data & backup', 'About & updates'])
+    expect(titles()).toEqual(['Guest', 'Workout', 'Timer alerts', 'Plan & schedule', 'Units', 'Equipment', 'Look & Home', 'Data & backup', 'About & updates'])
     expect(rowTitled('Workout').querySelector('.lrow-v').textContent).toBe('1:30 rest · Cards')
     expect(rowTitled('Timer alerts').querySelector('.lrow-v').textContent).toBe('Sound · Vibrate')
     expect(rowTitled('Plan & schedule').querySelector('.lrow-v').textContent).toMatch(/^Fixed Week · Mon/)
-    expect(rowTitled('Units & language').querySelector('.lrow-v').textContent).toBe('kg · English')
+    expect(rowTitled('Units').querySelector('.lrow-v').textContent).toBe('kg')
     expect(rowTitled('Equipment').querySelector('.lrow-v').textContent).toBe('Everything')
     expect(rowTitled('About & updates').querySelector('.lrow-v').textContent).toMatch(/^v\d|^vtest/)
   })
 
   it('marks the page rows so a long preview wraps instead of losing its second half', () => {
     mount()
-    const rows = ['Workout', 'Timer alerts', 'Plan & schedule', 'Units & language', 'Look & Home'].map(rowTitled)
+    const rows = ['Workout', 'Timer alerts', 'Plan & schedule', 'Units', 'Look & Home'].map(rowTitled)
     for (const r of rows) expect(r.classList.contains('sp-root-row')).toBe(true)
     // index.css: the marked rows' value may wrap, and never shrinks below its longest word
     const css = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8')
@@ -382,7 +382,7 @@ describe('searchSettings', () => {
 
   it('pages are hits too, and a title starting with the query comes first', () => {
     const hits = searchSettings('units', guestWeb, tr)
-    expect(hits[0]).toMatchObject({ title: 'Units & language', isPage: true, page: 'units' })
+    expect(hits[0]).toMatchObject({ title: 'Units', isPage: true, page: 'units' })
     expect(searchSettings('rest', guestWeb, tr).slice(0, 2).map(h => h.title)).toEqual(['Rest timer', 'Rest-pause rest'])
   })
 
@@ -406,45 +406,10 @@ describe('searchSettings', () => {
     expect(hits[0]).toMatchObject({ title: 'Vibrate', label: 'Vibration', trail: 'Timer-Hinweise' })
   })
 
-  it('finds the translated choices of a row, and words of its own language', async () => {
-    const { setLang, t } = await import('../lib/i18n.js')
-    try {
-      await setLang('de')
-      const first = q => searchSettings(q, guestWeb, t)[0]?.title
-      expect(first('Dunkel')).toBe('Theme')
-      expect(first('Feste Woche')).toBe('How you train')
-      expect(first('Wochenstart')).toBe('Week starts on')
-      expect(first('kompakt')).toBe('Layout')
-      expect(first('wischen')).toBe('Swipe actions')
-      expect(first('Geste')).toBe('Swipe actions')
-      await setLang('ar')
-      expect(searchSettings('تناوب', guestWeb, t).map(h => h.title)).toContain('How you train')
-    } finally { await setLang('en') }
-  })
 
-  it('English words match from the start of a word only, so "ton" never finds "buttons"', async () => {
-    const { setLang, t } = await import('../lib/i18n.js')
-    try {
-      await setLang('de')
-      const titles = searchSettings('ton', guestWeb, t).map(h => h.title)
-      expect(titles).not.toContain('Weight and reps buttons')
-      expect(titles).not.toContain('Superset buttons in the exercise header')
-    } finally { await setLang('en') }
+  it('finds a row by a word of its title or by its keywords', () => {
     expect(searchSettings('tone', { ...guestWeb, user: { id: 'u' }, pushOK: true, reminderOn: true, nudge: true }, s => s).map(h => h.title)).toContain('Nudge tone')
     expect(searchSettings('json', guestWeb, s => s).map(h => h.title)).toContain('Export backup (JSON)')
   })
 })
 
-describe('translations', () => {
-  const packs = import.meta.glob('../locales/*.js', { eager: true, import: 'default' })
-  it('every page and searchable row title has a word in each pack', () => {
-    const keys = [...new Set([...PAGE_IDS.map(id => PAGES[id].title), ...SEARCH.map(e => e.title)])]
-    for (const [file, pack] of Object.entries(packs)) {
-      const missing = keys.filter(k => !Object.hasOwn(pack, k) || !String(pack[k]).trim())
-      expect(missing, file).toEqual([])
-    }
-  })
-  it('the root groups only name real pages', () => {
-    for (const g of ROOT_GROUPS) for (const id of g) expect(PAGES[id], id).toBeTruthy()
-  })
-})

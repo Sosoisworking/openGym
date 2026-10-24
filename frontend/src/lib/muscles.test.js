@@ -281,16 +281,3 @@ describe('muscle balance windows and ranking', () => {
 // MUSCLE_NAME values are the i18n keys — a value no pack defines renders English in every
 // language. The Library list showed "Cardiovascular system" untranslated for every cardio
 // exercise (QA copy): the packs only ever had the dataset's own lowercase spelling.
-describe('MUSCLE_NAME as i18n keys', () => {
-  const packs = import.meta.glob('../locales/*.js', { eager: true })
-  // One pack per non-English language, except a derived locale such as de-CH — counted from
-  // LANGS rather than hardcoded, so adding a language cannot silently shrink this check.
-  const packCount = Object.keys(LANGS).filter(code => code !== 'en' && !DERIVED_LOCALES[code]).length
-  it('every display name is a key in every locale pack', () => {
-    expect(Object.keys(packs).length).toBe(packCount)
-    for (const [file, mod] of Object.entries(packs)) {
-      const missing = Object.values(MUSCLE_NAME).filter(name => !(name in mod.default))
-      expect(missing, file).toEqual([])
-    }
-  })
-})

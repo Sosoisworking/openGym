@@ -44,6 +44,7 @@ import { SettingsRoute } from './views/Settings.jsx'
 import Admin from './views/Admin.jsx'
 import CoachChat from './views/CoachChat.jsx'
 import Measurements from './views/Measurements.jsx'
+import Habits from './views/Habits.jsx'
 import CoachIntake from './views/CoachIntake.jsx'
 import CoachSetup from './views/CoachSetup.jsx'
 
@@ -62,7 +63,7 @@ function applyPrefs(theme, accent) {
   de.dataset.theme = resolveTheme(theme)
   applyAccent(de, accent, de.dataset.theme)
   const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.content = de.dataset.theme === 'light' ? '#f2f2f7' : '#000000'
+  if (meta) meta.content = de.dataset.theme === 'light' ? '#e4dacc' : '#1d1613'
   if (MOBILE) setSystemBarsLight(de.dataset.theme === 'light')
 }
 
@@ -218,6 +219,7 @@ function Shell() {
               <Route path="/structural-balance" element={<StructuralBalance />} />
               <Route path="/progress-photos" element={<ProgressPhotos />} />
               <Route path="/measurements" element={<Measurements />} />
+              <Route path="/habits" element={<Habits />} />
               <Route path="/settings" element={<SettingsRoute />} />
               <Route path="/settings/:page" element={<SettingsRoute />} />
               {/* The Coach screens gate themselves on the instance config; the routes exist

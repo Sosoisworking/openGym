@@ -66,7 +66,11 @@ const LABELS = {
   // Photos and videos of custom exercises: "Reset everything" clearing a profile's files, and the
   // upload or clean-up throttle pausing a profile (`msg` says which).
   'media.sweep': 'Cleared unused photos and videos',
-  'media.throttled': 'Too many photo or video requests'
+  'media.throttled': 'Too many photo or video requests',
+  // Calendar export: a new subscription link, and Google Calendar connected or disconnected.
+  'calendar.feed.new': 'Made a new calendar link',
+  'calendar.google.connect': 'Connected Google Calendar',
+  'calendar.google.disconnect': 'Disconnected Google Calendar'
 }
 // An unknown event is shown raw rather than dropped or rendered as "undefined": a dashboard
 // that is one version behind the server should still say *something* truthful.

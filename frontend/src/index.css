@@ -1,5 +1,5 @@
 /* ============================================================================
-   openGym — design system
+   Tarnished — design system
    ----------------------------------------------------------------------------
    Rebuilt around four rules, each aimed at a specific "generated" tell in the
    previous sheet:
@@ -17,34 +17,38 @@
    ========================================================================== */
 
 /* ---------------------------------------------------------------- tokens -- */
+/* Tarnished palette: umber #1D1613, bone #E4DACC, slate blue #6D889B, rust #7D2F09,
+   dark slate #323D47, and moss for the accent. Dark is the main theme; light is the same
+   stones on parchment. The "system" colours below keep their iOS names because the whole
+   stylesheet refers to them, but each one is an earth tone now. */
 :root {
   /* surfaces — dark is the default */
-  --bg:        #000000;
-  --bg-el:     #0e0e10;   /* elevated backdrop (sheets, bars) */
-  --surface:   #1c1c1e;   /* card / grouped-list fill */
-  --surface-2: #2c2c2e;   /* pressed + nested fill */
-  --surface-3: #3a3a3c;   /* controls (segmented track, switch off) */
+  --bg:        #1d1613;   /* umber */
+  --bg-el:     #221a16;   /* elevated backdrop (sheets, bars) */
+  --surface:   #2a211c;   /* card / grouped-list fill */
+  --surface-2: #362b25;   /* pressed + nested fill */
+  --surface-3: #323d47;   /* controls (segmented track, switch off): dark slate */
 
-  /* text */
-  --label:     #ffffff;
-  --label-2:   rgba(235,235,245,.60);
-  --label-3:   rgba(235,235,245,.32);
-  --label-4:   rgba(235,235,245,.18);
+  /* text — bone */
+  --label:     #e4dacc;
+  --label-2:   rgba(228,218,204,.62);
+  --label-3:   rgba(228,218,204,.34);
+  --label-4:   rgba(228,218,204,.18);
 
   /* lines */
-  --sep:       rgba(84,84,88,.60);
-  --sep-op:    rgba(84,84,88,.34);   /* for edges sitting over blur */
+  --sep:       rgba(228,218,204,.14);
+  --sep-op:    rgba(228,218,204,.10);   /* for edges sitting over blur */
   --hair:      .5px;
 
-  /* system palette (iOS dark values) */
-  --blue:#0a84ff; --green:#30d158; --red:#ff453a; --orange:#ff9f0a;
-  --yellow:#ffd60a; --teal:#40c8e0; --indigo:#5e5ce6; --pink:#ff375f;
-  --purple:#bf5af2; --mint:#63e6e2; --brown:#ac8e68; --grey:#8e8e93;
+  /* earth palette, lightened enough to read on umber */
+  --blue:#7d9fba; --green:#8a9a5b; --red:#d2693f; --orange:#d98a3d;
+  --yellow:#d9b45a; --teal:#5fa18b; --indigo:#6d889b; --pink:#c27c6b;
+  --purple:#a874ae; --mint:#8fb3a0; --brown:#a88563; --grey:#8c8279;
 
-  /* accent (per-account, synced) */
+  /* accent (per-account, synced) — overgrown moss */
   --acc:  var(--green);
-  --acc-2:#248a3d;
-  --on-acc:#000000;
+  --acc-2:#6b7a42;
+  --on-acc:#1d1613;
   --acc-soft: color-mix(in srgb, var(--acc) 16%, transparent);
   --acc-line: color-mix(in srgb, var(--acc) 38%, transparent);
 
@@ -70,48 +74,52 @@
 }
 
 :root[data-theme="light"] {
-  --bg:        #f2f2f7;
-  --bg-el:     #f7f7fa;
-  --surface:   #ffffff;
-  --surface-2: #ececef;
-  --surface-3: #e3e3e8;
+  --bg:        #e4dacc;   /* bone */
+  --bg-el:     #eae2d6;
+  --surface:   #f1ebe1;   /* parchment */
+  --surface-2: #ddd2c2;
+  --surface-3: #d3c7b5;
 
-  --label:     #000000;
-  --label-2:   rgba(60,60,67,.60);
-  --label-3:   rgba(60,60,67,.30);
-  --label-4:   rgba(60,60,67,.16);
+  --label:     #1d1613;
+  --label-2:   rgba(29,22,19,.64);
+  --label-3:   rgba(29,22,19,.36);
+  --label-4:   rgba(29,22,19,.18);
 
-  --sep:       rgba(60,60,67,.29);
-  --sep-op:    rgba(60,60,67,.20);
+  --sep:       rgba(29,22,19,.18);
+  --sep-op:    rgba(29,22,19,.12);
 
-  --blue:#007aff; --green:#34c759; --red:#ff3b30; --orange:#ff9500;
-  --yellow:#ffcc00; --teal:#30b0c7; --indigo:#5856d6; --pink:#ff2d55;
-  --purple:#af52de; --mint:#00c7be; --brown:#a2845e; --grey:#8e8e93;
-  --acc-2:#248a3d;
-  --on-acc:#ffffff;
+  /* the same earth palette, darkened to read on bone */
+  --blue:#4e6676; --green:#4b5e2a; --red:#7d2f09; --orange:#a85a1c;
+  --yellow:#8c6d1f; --teal:#3f6b5e; --indigo:#323d47; --pink:#9a4a3a;
+  --purple:#6e5374; --mint:#3f7a66; --brown:#7a5a3a; --grey:#7a7068;
+  --acc-2:#3f5223;
+  --on-acc:#f1ebe1;
 }
 
-/* accents — Apple's system colours, so a recolour never looks off-system */
-:root[data-accent="lime"]  { --acc:var(--green);  --acc-2:#248a3d; --on-acc:#000 }
-:root[data-accent="sky"]   { --acc:var(--blue);   --acc-2:#0060df; --on-acc:#fff }
-:root[data-accent="orange"]{ --acc:var(--orange); --acc-2:#c76b00; --on-acc:#000 }
-:root[data-accent="violet"]{ --acc:var(--purple); --acc-2:#8944ab; --on-acc:#fff }
-:root[data-accent="pink"]  { --acc:var(--pink);   --acc-2:#d70036; --on-acc:#fff }
-:root[data-accent="red"]   { --acc:var(--red);    --acc-2:#d70015; --on-acc:#fff }
-:root[data-accent="teal"]  { --acc:var(--teal);   --acc-2:#0071a4; --on-acc:#000 }
-:root[data-accent="gold"]  { --acc:var(--yellow); --acc-2:#b25000; --on-acc:#000; --knob-ring:rgba(0,0,0,.28) }
-/* Label colour on a filled accent button is picked per accent by measured contrast,
-   not by taste. Button text is 17px/600, so the AA bar is 3:1 (large text). White on
-   the light-theme green is 2.22:1 and on teal 2.57:1 — both fail, and green is the
-   DEFAULT accent, so every primary button in light mode was failing. Black scores
-   9.46 / 8.16 there. Blue, purple, pink and red keep white (3.5–4.1:1), which both
-   passes and matches the platform convention. */
-:root[data-theme="light"][data-accent="lime"],
-:root[data-theme="light"][data-accent="teal"]  { --on-acc:#000 }
-:root[data-theme="light"][data-accent="sky"],
-:root[data-theme="light"][data-accent="violet"],
-:root[data-theme="light"][data-accent="pink"],
-:root[data-theme="light"][data-accent="red"]   { --on-acc:#fff }
+/* accents — the keys are the old colour names, kept so stored settings still resolve:
+   lime = moss, sky = slate, orange = ember, violet = heather, pink = clay, red = rust,
+   teal = verdigris, gold = brass. Each follows the theme through the palette above. */
+:root[data-accent="lime"]  { --acc:var(--green);  --acc-2:#6b7a42 }
+:root[data-accent="sky"]   { --acc:var(--blue);   --acc-2:#6d889b }
+:root[data-accent="orange"]{ --acc:var(--orange); --acc-2:#b06c2a }
+:root[data-accent="violet"]{ --acc:var(--purple); --acc-2:#7d6381 }
+:root[data-accent="pink"]  { --acc:var(--pink);   --acc-2:#a05f50 }
+:root[data-accent="red"]   { --acc:var(--red);    --acc-2:#a8502c }
+:root[data-accent="teal"]  { --acc:var(--teal);   --acc-2:#557c70 }
+:root[data-accent="gold"]  { --acc:var(--yellow); --acc-2:#b08f3e; --knob-ring:rgba(0,0,0,.28) }
+/* Label colour on a filled accent button, by measured contrast (17px/600 needs 3:1). In dark
+   every accent is a mid tone and umber reads on all of them (4.9:1 or better); in light every
+   accent is a deep tone and parchment reads on all of them (4.3:1 or better). */
+:root[data-accent]                    { --on-acc:#1d1613 }
+:root[data-theme="light"][data-accent]{ --on-acc:#f1ebe1 }
+:root[data-theme="light"][data-accent="lime"]  { --acc-2:#3f5223 }
+:root[data-theme="light"][data-accent="sky"]   { --acc-2:#3d5262 }
+:root[data-theme="light"][data-accent="orange"]{ --acc-2:#8a4914 }
+:root[data-theme="light"][data-accent="violet"]{ --acc-2:#5a4360 }
+:root[data-theme="light"][data-accent="pink"]  { --acc-2:#7f3c2f }
+:root[data-theme="light"][data-accent="red"]   { --acc-2:#5f2306 }
+:root[data-theme="light"][data-accent="teal"]  { --acc-2:#30554a }
+:root[data-theme="light"][data-accent="gold"]  { --acc-2:#6f5618 }
 
 /* ---------------------------------------------------------------- reset -- */
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -400,7 +408,6 @@ h4.sec{
   -webkit-backdrop-filter:saturate(180%) blur(10px);backdrop-filter:saturate(180%) blur(10px);
   border-top:var(--hair) solid var(--sep-op);
 }
-:root[data-theme="light"] #tabbar{background:rgba(249,249,251,.94)}
 #tabbar button{
   flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
   color:var(--label-3);font-size:10px;font-weight:500;letter-spacing:.005em;padding-top:3px;
@@ -456,7 +463,6 @@ h4.sec{
    fully opaque instead. Keep this in sync with the rules above. */
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
   #tabbar{background:var(--bg-el)}
-  :root[data-theme="light"] #tabbar{background:#f9f9fb}
   #timer{background:var(--surface)}
   #toast{background:var(--surface-2)}
 }
@@ -579,7 +585,7 @@ h4.sec{
 .search-row{display:flex;gap:8px}
 .search-row>.search{flex:1;min-width:0}
 .search-row>.ex-view-btn{width:46px;height:auto;border-radius:10px;background:var(--surface-2);font-size:20px}
-:root[data-theme="light"] .search-row>.ex-view-btn{background:rgba(118,118,128,.12)}
+:root[data-theme="light"] .search-row>.ex-view-btn{background:color-mix(in srgb,var(--label) 7%,transparent)}
 .search-row>.ex-view-btn.on,:root[data-theme="light"] .search-row>.ex-view-btn.on{background:var(--acc-soft);color:var(--acc)}
 
 /* ---------------------------------------------------------------- chips -- */
@@ -663,7 +669,7 @@ body.chips-dragging *{cursor:inherit}
   pointer-events:none;--icon-stroke:2.1;z-index:1;
 }
 .searchf .field{padding-inline-start:35px;padding-inline-end:36px;background:var(--surface-2);border-radius:10px}
-:root[data-theme="light"] .searchf .field{background:rgba(118,118,128,.12)}
+:root[data-theme="light"] .searchf .field{background:color-mix(in srgb,var(--label) 7%,transparent)}
 .searchf .clear{
   position:absolute;inset-inline-end:8px;width:22px;height:22px;border-radius:50%;
   background:var(--label-3);color:var(--bg);display:flex;align-items:center;
@@ -672,7 +678,7 @@ body.chips-dragging *{cursor:inherit}
 /* legacy .search wrapper */
 .search{position:relative}
 .search .input{padding-inline-start:35px;background:var(--surface-2);border-radius:10px}
-:root[data-theme="light"] .search .input{background:rgba(118,118,128,.12)}
+:root[data-theme="light"] .search .input{background:color-mix(in srgb,var(--label) 7%,transparent)}
 .search>svg{
   position:absolute;inset-inline-start:11px;top:50%;transform:translateY(-50%);z-index:1;
   width:16px;height:16px;stroke:var(--label-3);fill:none;stroke-width:2.1;stroke-linecap:round;
@@ -730,16 +736,16 @@ body.chips-dragging *{cursor:inherit}
   background:var(--surface-3);border-radius:9px;padding:2px;isolation:isolate;
 }
 .seg>button{flex:1 1 0;min-width:0}
-:root[data-theme="light"] .seg{background:rgba(118,118,128,.12)}
+:root[data-theme="light"] .seg{background:color-mix(in srgb,var(--label) 7%,transparent)}
 .seg-sel{
   position:absolute;z-index:0;top:2px;bottom:2px;inset-inline-start:2px;
   width:calc((100% - 4px)/var(--n));
   transform:translateX(calc(100% * var(--i)));
-  background:var(--surface);border-radius:7px;
+  background:color-mix(in srgb,var(--surface-3) 78%,var(--label) 22%);border-radius:7px;
   box-shadow:0 3px 8px rgba(0,0,0,.12),0 1px 1px rgba(0,0,0,.06);
   transition:transform var(--med) var(--ease);
 }
-:root[data-theme="light"] .seg-sel{background:#fff}
+:root[data-theme="light"] .seg-sel{background:#fbf7f0}
 .seg button{
   position:relative;z-index:1;padding:6px 8px;font-size:14px;font-weight:500;
   letter-spacing:-.006em;color:var(--label);display:flex;align-items:center;
@@ -1534,7 +1540,7 @@ body.no-tabbar #timer.working{box-shadow:inset 0 var(--hair) 0 var(--acc),0 -10p
   box-shadow:0 20px 60px -12px rgba(0,0,0,.5);
   animation:pop .28s var(--ease);
 }
-:root[data-theme="light"] .center{background:#fff}
+:root[data-theme="light"] .center{background:var(--surface)}
 /* a dialog with a field centres in what the Android 15 keyboard leaves */
 :root[data-native-kb] .center{
   top:calc((100% - var(--native-kb)) / 2);
@@ -2135,3 +2141,60 @@ button.wl-summary{width:100%;padding:0 0 10px;text-align:start;border-radius:var
 [dir="rtl"] *{letter-spacing:0}
 .exfix-link{display:inline-flex;align-items:center;gap:5px;margin:14px 0 4px;color:var(--label-3);text-decoration:none}
 .list .similar-label{margin:16px 2px 6px;grid-column:1/-1}
+
+/* ---------------------------------------------------------------- brand -- */
+/* The name, where it stands alone (sign-in, first launch): an old-style serif, the one place
+   the type steps away from the system face. */
+.wordmark{font-family:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;font-weight:600;letter-spacing:-.01em}
+
+/* --------------------------------------------------------------- habits -- */
+/* A day's habits (components/Habits.jsx): tick, name, streak. Each row carries its habit's
+   calendar colour as --hc, so the tick and the dot on the calendar are the same colour. */
+.habit-rows{display:flex;flex-direction:column}
+.habit-row{display:flex;align-items:center;gap:12px;min-height:46px;padding:4px 0}
+.habit-row+.habit-row{border-top:var(--hair) solid var(--sep)}
+.habit-row .habit-chk{--acc:var(--hc);box-shadow:inset 0 0 0 1.8px color-mix(in srgb,var(--hc) 70%,transparent)}
+.habit-row .habit-chk.on{box-shadow:none}
+.habit-name{flex:1;min-width:0;font-size:16px;letter-spacing:-.009em;overflow-wrap:anywhere;
+  transition:color var(--fast)}
+.habit-row.done .habit-name{text-decoration:line-through;text-decoration-thickness:1.5px;
+  text-decoration-color:color-mix(in srgb,var(--hc) 80%,transparent);color:var(--label-3)}
+.habit-streak{display:inline-flex;align-items:center;gap:3px;font-size:13px;color:var(--orange);font-weight:500}
+.habit-x{width:30px;height:30px;font-size:14px;background:none;color:var(--label-3)}
+.habit-add{display:flex;gap:8px;align-items:center;margin-top:10px}
+.habit-add .input{padding:10px 13px;font-size:16px}
+.card .habit-add .input,.sheet .habit-add .input{background:var(--bg-el)}
+.habit-plus{background:var(--acc);color:var(--on-acc)}
+.habit-plus:disabled{background:var(--surface-3);color:var(--label-3)}
+.habit-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.card .habit-head h2{margin:0;flex:1}
+.habit-head .iconbtn{width:30px;height:30px;font-size:15px}
+.habit-count{font-size:13px;color:var(--label-2);font-variant-numeric:tabular-nums}
+.habit-ideas{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.habit-ideas .chip{font-size:13px}
+/* the dots a calendar day shows, one per habit done that day */
+.habit-dots{display:flex;gap:2px;justify-content:center;min-height:4px}
+.habit-dots b{width:4px;height:4px;border-radius:50%}
+.habit-dots b.more{background:var(--label-3)}
+.wday .habit-dots{margin-top:3px}
+/* one habit's last weeks, on the Habits screen: a square per day, filled when ticked */
+.habit-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:10px}
+.habit-grid button{aspect-ratio:1;border-radius:6px;background:var(--surface-2);font-size:11px;
+  color:var(--label-3);display:flex;align-items:center;justify-content:center}
+.habit-grid button.on{background:var(--hc);color:var(--on-acc)}
+.habit-grid button.today{box-shadow:inset 0 0 0 1.5px var(--hc)}
+.habit-grid button.off{background:transparent;box-shadow:inset 0 0 0 1px var(--sep)}
+.habit-grid button:disabled{opacity:.45}
+.habit-card-head{display:flex;align-items:center;gap:10px}
+.habit-swatch{width:12px;height:12px;border-radius:50%;flex:none}
+.habit-card-head .ttl{flex:1;min-width:0;font-size:17px;font-weight:600;letter-spacing:-.012em;overflow-wrap:anywhere}
+.habit-meta{font-size:13px;color:var(--label-2);margin-top:4px}
+
+/* --- calendar view toggle and day sheet --- */
+.cal-toggle{margin-bottom:10px}
+.cal-d .habit-dots{margin-top:1px}
+.cal-d.future{color:var(--label-2)}
+.cal-legend{flex-wrap:wrap;row-gap:6px}
+.day-sect{margin-top:16px}
+.day-sect>h4{font-size:13px;font-weight:400;color:var(--label-2);margin:0 0 6px}
+.cal-link .input{font-size:13px;padding:9px 11px;background:var(--bg-el);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}

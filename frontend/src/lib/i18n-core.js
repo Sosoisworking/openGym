@@ -3,38 +3,20 @@
 // (import.meta.glob lazy
 // loads, the React subscription hook) live in i18n.js and re-export from here.
 
-export const LANGS = {
-  en: 'English', de: 'Deutsch', 'de-CH': 'Deutsch (Schweiz)', es: 'Español', fr: 'Français',
-  it: 'Italiano', pt: 'Português (Portugal)', 'pt-BR': 'Português (Brasil)', pl: 'Polski',
-  tr: 'Türkçe', ru: 'Русский', uk: 'Українська', zh: '简体中文', 'zh-TW': '繁體中文',
-  ko: '한국어', hi: 'हिन्दी', bn: 'বাংলা', th: 'ไทย', hu: 'Magyar', ar: 'العربية'
-}
+// Tarnished ships in English only. The machinery stays (t() still formats and pluralises), so a
+// language can come back later by adding a pack and an entry here.
+export const LANGS = { en: 'English' }
 // Languages with exercise instructions / names, generated from catalogue/i18n by
 // scripts/catalogue/build.mjs. A pack can be partial; what it lacks shows in English.
 import { INSTR_LANGS, EXERCISE_NAME_LANGS } from './catalogue-langs.js'
 export { INSTR_LANGS, EXERCISE_NAME_LANGS }
 // Languages rendered right-to-left; i18n.js setLang applies the direction from this.
-export const RTL_LANGS = new Set(['ar'])
-export const DATE_LOCALES = {
-  en: 'en-GB', de: 'de-DE', 'de-CH': 'de-CH', es: 'es-ES', fr: 'fr-FR', it: 'it-IT',
-  pt: 'pt-PT', 'pt-BR': 'pt-BR',
-  pl: 'pl-PL', tr: 'tr-TR', ru: 'ru-RU', uk: 'uk-UA', zh: 'zh-CN', 'zh-TW': 'zh-TW', ko: 'ko-KR', hi: 'hi-IN', bn: 'bn-BD-u-nu-latn', th: 'th-TH', hu: 'hu-HU', ar: 'ar-u-nu-latn'
-}
+export const RTL_LANGS = new Set()
+export const DATE_LOCALES = { en: 'en-GB' }
 
-// Locales derived from another language by a pure text transform rather than carried as their
-// own pack. Swiss Standard German has no ß — every one is written ss — so de-CH is de with a
-// single substitution. Deriving it keeps one German source of truth: a hand-maintained de-CH
-// would be 98.7% identical to de.js (16 of 1265 values differ), and check-locales.mjs would
-// then require every future German string to be written twice, forever.
-//
-// The transform is exact in this direction ONLY. Going back needs vowel length — "Maße" and
-// "Masse" both collapse to "Masse" — so de is always the base and never the derivative.
-//
-// Note this covers orthography, not vocabulary: a Swiss-specific word choice (Velo for
-// Fahrrad) would need a real pack. None of the current strings contain one.
-export const DERIVED_LOCALES = {
-  'de-CH': { base: 'de', transform: s => s.replace(/ß/g, 'ss') }
-}
+// Locales derived from another language by a pure text transform ({ base, transform }), so a
+// regional variant needs no pack of its own. None while the app is English-only.
+export const DERIVED_LOCALES = {}
 
 // The language whose packs a locale actually loads: a derived locale reads its base's, every
 // other language its own. Used for the INSTR_LANGS/EXERCISE_NAME_LANGS membership tests too,

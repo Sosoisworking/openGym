@@ -2,19 +2,22 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { effectiveRoutines, effectiveRoutineIds, nextTrainingDay, streakWeeks, lastBW, setsDoneActive } from '../lib/history.js'
-import { fmtNum, fmtDate, todayISO, isoOf, weekStartOf, weekDayOffset, DAYS, DAYN } from '../lib/format.js'
+import { fmtNum, fmtDate, todayISO, isoOf, weekStartOf, weekDayOffset, DAYS, DAYN, MONTHS_LONG } from '../lib/format.js'
 import { t, tn, dateLocale } from '../lib/i18n.js'
-import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, starterPlanSheet, bwDeltaColor, weighInsSheet } from '../sheets.jsx'
+import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, daySheet, startFlow, starterPlanSheet, bwDeltaColor, weighInsSheet } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import Icon from '../components/Icon.jsx'
 import QueueRow from '../components/QueueRow.jsx'
 import { queueOf, queueView, weekTally, pinState } from '../lib/queue.js'
 import { scheduleModeOf } from '../lib/rotation.js'
 import { useConnectionTrouble } from '../components/SyncBanner.jsx'
-import { Button } from '../components/ui.jsx'
+import { Button, Segmented } from '../components/ui.jsx'
 import { tappable } from '../lib/use-sheet-keyboard.js'
 import { glyphOf } from '../lib/glyphs.js'
 import { dayNoteOf } from '../lib/day-notes.js'
+import { dayHabits, habitList, HABIT_SUGGESTIONS } from '../lib/habits.js'
+import { HabitRows, HabitAdd, HabitDots, addHabit } from '../components/Habits.jsx'
+import MonthCalendar from '../components/MonthCalendar.jsx'
 
 // Home = what to do now + a quick glance. Deep charts & history live in Stats.
 export default function Home() {
@@ -24,6 +27,11 @@ export default function Home() {
   // The banner switched off and the sync stuck: a dot on the gear (Settings → Show connection status).
   const trouble = useConnectionTrouble()
   const [weekOffset, setWeekOffset] = useState(0)
+  const [monthOffset, setMonthOffset] = useState(0)
+  const [editingHabits, setEditingHabits] = useState(false)
+  // The calendar card shows the week strip or the whole month (synced, so it stays as you left it).
+  const monthView = S.calView === 'month'
+  const setCalView = v => useStore.getState().update(s => { s.calView = v })
 
   const today = new Date()
   // A weekday can hold several routines. `todayRoutines` is the whole day; `routine` is the
@@ -64,9 +72,14 @@ export default function Home() {
     // A day off with a note (#261) reads as excused, not as a plan that went by.
     const dot = done ? ' done' : dayNoteOf(S, iso) ? ' noted' : ovr && eff ? ' ovr' : eff ? ' plan' : ''
     strip.push(<div key={i} className={'wday' + (iso === todayISO() ? ' today' : '')} {...tappable(() => dayOverrideSheet(iso))}>
-      <div className="lbl">{t(DAYS[d.getDay()])}</div><div className="num">{d.getDate()}</div><div className={'dot' + dot} /></div>)
+      <div className="lbl">{t(DAYS[d.getDay()])}</div><div className="num">{d.getDate()}</div><div className={'dot' + dot} />
+      {iso <= todayISO() && <HabitDots S={S} ids={dayHabits(S, iso).ids} max={3} />}</div>)
   }
   const wkEnd = new Date(wkStart); wkEnd.setDate(wkStart.getDate() + 6)
+  const shownMonth = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1)
+  const monthLabel = t(MONTHS_LONG[shownMonth.getMonth()]) + (shownMonth.getFullYear() !== today.getFullYear() ? ' ' + shownMonth.getFullYear() : '')
+  const habits = habitList(S)
+  const habitsToday = dayHabits(S, todayISO())
   const wkLabel = weekOffset === 0 ? t('This week') : `${wkStart.getDate()} ${wkStart.toLocaleDateString(dateLocale(), { month: 'short' })} – ${wkEnd.getDate()} ${wkEnd.toLocaleDateString(dateLocale(), { month: 'short' })}`
 
   // A coach week (S.queue) read through the same tolerant reader QueueRow uses, so a malformed
@@ -102,7 +115,7 @@ export default function Home() {
 
   return <div className="narrow">
     <div className="hdr">
-      <div><h1>{user ? t('Hi {0}', user.name) : 'openGym'}</h1><div className="sub">{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
+      <div><h1>{user ? t('Hi {0}', user.name) : 'Tarnished'}</h1><div className="sub">{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
       <button className="iconbtn" onClick={() => nav('/settings')} aria-label={trouble ? t('Settings') + ', ' + t('Connection problem') : t('Settings')}><Icon name="gear" />{trouble && <span className="tab-dot" aria-hidden="true" />}</button>
     </div>
 
@@ -114,12 +127,24 @@ export default function Home() {
         {t('No rotation yet. Add routines to it in Plan.')}
         <div style={{ marginTop: 10 }}><Button size="sm" variant="tinted" onClick={() => nav('/plan')}>{t('Set up in Plan')}</Button></div>
       </div>) : <>
-        <div className="row between" style={{ marginBottom: 8 }}>
-          <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w - 1)} aria-label={t('Previous week')}><Icon name="chevronLeft" /></button>
-          <div className="small muted" style={{ fontWeight: 500 }}>{wkLabel}</div>
-          <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w + 1)} aria-label={t('Next week')}><Icon name="chevronRight" /></button>
-        </div>
-        <div className="week">{strip}</div>
+        <Segmented className="cal-toggle" value={monthView ? 'month' : 'week'} onChange={setCalView}
+          options={[{ value: 'week', label: t('Week') }, { value: 'month', label: t('Month') }]} />
+        {monthView ? <>
+          <div className="row between" style={{ marginBottom: 2 }}>
+            <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setMonthOffset(m => m - 1)} aria-label={t('Previous month')}><Icon name="chevronLeft" /></button>
+            <div className="small muted" style={{ fontWeight: 500 }}>{monthLabel}</div>
+            <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setMonthOffset(m => m + 1)} aria-label={t('Next month')}><Icon name="chevronRight" /></button>
+          </div>
+          <MonthCalendar S={S} month={shownMonth} onDay={daySheet} />
+          <div style={{ height: 10 }} />
+        </> : <>
+          <div className="row between" style={{ marginBottom: 8 }}>
+            <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w - 1)} aria-label={t('Previous week')}><Icon name="chevronLeft" /></button>
+            <div className="small muted" style={{ fontWeight: 500 }}>{wkLabel}</div>
+            <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w + 1)} aria-label={t('Next week')}><Icon name="chevronRight" /></button>
+          </div>
+          <div className="week">{strip}</div>
+        </>}
       </>}
       {/* Once today's session is logged the row stops asking for it. The week strip already
           knew (its dot goes 'done'); this row did not, so a finished day kept showing the
@@ -157,6 +182,24 @@ export default function Home() {
         </Button>
       </div>}
     </div>
+
+    {/* Today's habits (lib/habits.js): tick them off here, add one in the field, remove one in
+        edit mode. The calendar shows each habit done on a day as a dot in its colour. */}
+    {S.showHabitsCard !== false && <div className="card">
+      <div className="habit-head">
+        <h2>{t('Habits')}</h2>
+        {habitsToday.total > 0 && <span className="habit-count">{t('{0} of {1}', habitsToday.done, habitsToday.total)}</span>}
+        {habits.length > 0 && <button className="iconbtn" onClick={() => setEditingHabits(v => !v)} aria-pressed={editingHabits}
+          aria-label={editingHabits ? t('Done') : t('Edit habits')}><Icon name={editingHabits ? 'check' : 'pencil'} /></button>}
+        <button className="iconbtn" onClick={() => nav('/habits')} aria-label={t('All habits')}><Icon name="chevronRight" /></button>
+      </div>
+      <HabitRows iso={todayISO()} editing={editingHabits} />
+      {!habits.length && <>
+        <div className="muted small">{t('Tick off a few things every day: water, sleep, steps, reading. The calendar keeps the score.')}</div>
+        <div className="habit-ideas">{HABIT_SUGGESTIONS.Fitness.slice(0, 3).map(n => <button key={n} className="chip" onClick={() => addHabit(t(n))}><Icon name="plus" /> {t(n)}</button>)}</div>
+      </>}
+      <HabitAdd />
+    </div>}
 
     {/* Jump to the gym check-in cards (QR membership codes). Shown here as a quick tap on
         arrival at the gym; folds away per user via the "Gym check-in" switch in Settings. */}

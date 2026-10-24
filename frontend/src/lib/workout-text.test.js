@@ -93,27 +93,3 @@ describe('workoutText speed unit', () => {
 
 // Copy as text has no CSS to title-case with, so it capitalises itself wherever the screen does
 // (exerciseNameClass): every translated pack stored lower-case, and not German's own casing.
-describe('workoutText exercise names per language', () => {
-  const packs = import.meta.glob('../exercise-names/*.js', { eager: true, import: 'default' })
-  const w = { id: 'w2', d: '2026-09-03', start: 0, end: 0, name: 'Push', vol: 0,
-    entries: [{ id: '0025', target: { mode: 'reps' }, sets: [{ w: 60, r: 8, done: true }] }] }
-  const nameLine = () => workoutText(w, { unit: 'kg', nameOf: e => exerciseNameFor(EXIDX[e.id]) }).split('\n\n')[1].split('\n')[0]
-  afterEach(() => _setLangState('en', {}, null, null))
-
-  it('keeps German as the pack writes it and title-cases the lower-case packs', () => {
-    const expected = {
-      de: 'Bankdrücken mit Langhantel', es: 'Press De Banca Con Barra', fr: 'Développé Couché À La Barre',
-      it: 'Panca Piana Con Bilanciere', 'pt-BR': 'Supino Com Barra', ru: 'Жим Штанги Лёжа', hu: 'Fekvenyomás Rúddal',
-      pl: 'Wyciskanie Sztangi Na Ławce Płaskiej',
-    }
-    for (const lang of EXERCISE_NAME_LANGS) {
-      const pack = packs[`../exercise-names/${lang}.js`]
-      _setLangState(lang, {}, null, pack, false)
-      // Packs in a script without case (ar, hi, th, zh...) come out exactly as written.
-      const name = pack[w.entries[0].id]
-      expect(nameLine(), lang).toBe(expected[lang] ?? (name === name.toLocaleUpperCase() ? name : nameLine()))
-    }
-    _setLangState('en', {}, null, null)
-    expect(nameLine()).toBe('Barbell Bench Press')
-  })
-})

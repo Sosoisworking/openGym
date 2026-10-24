@@ -3,7 +3,7 @@ import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { EXDB, EXIDX, BODYPARTS, isCardio, isBodyweightEq, allExercises, equipmentOf, byCategory, smOf, searchExercises, similarExercises, exOr, isAssisted, betterWeight, beatsWeight, isCustomEx } from './lib/exercises.js'
 import { activeProfile, exAvailable, ALL_EQUIPMENT, newProfile, profileEquipment, ACC_V } from './lib/equipment.js'
-import { fmtDate, fmtDateRange, fmtNum, fmtPlate, exerciseNameText, fmtVol, fmtDur, durPart, todayISO, isoOf, uid, exCount, routineCount, setsWorkCount, DAYN, DAYS, weekOrder, weekStartOf, weekDayOffset, MONTHS_LONG, ACCENTS } from './lib/format.js'
+import { fmtDate, fmtDateRange, fmtNum, fmtPlate, exerciseNameText, fmtVol, fmtDur, durPart, todayISO, isoOf, dateOfISO, uid, exCount, routineCount, setsWorkCount, DAYN, weekStartOf, MONTHS_LONG, ACCENTS } from './lib/format.js'
 import { lastEntryFor, bestWeightFor, bestWeightForEntry, buildSets, effectiveRoutineIds, workoutDay, workoutVolume, setsDone, setsDoneActive, setUnitsTotal, lastBW, sessionSections, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, EFFORT, capEffort, stepEffort, isBw, isPerSide, sideReps, workSetsDone, applyIntensifierPlan, MAX_PLANNED_WARMUPS, NOTE_MAX } from './lib/history.js'
 import { usesBar, defaultBarWeight, hasBarOverride, isNoBar } from './lib/bar.js'
 import { PLATE_SIZES, pairsOf, ownsPlates, withPlatePairs, withStandardPlates, withLoadKind, loadKindFor, baseWeightFor, dropGrid } from './lib/plates.js'
@@ -65,6 +65,9 @@ import { workoutText } from './lib/workout-text.js'
 import { workoutCardModel, layoutWorkoutCard, drawWorkoutCard, viewAspect, CARD_FONT } from './lib/workout-card.js'
 import { copyText } from './lib/clipboard.js'
 import { queueRemaining, pinState } from './lib/queue.js'
+import { dayHabits } from './lib/habits.js'
+import { HabitRows } from './components/Habits.jsx'
+import MonthCalendar from './components/MonthCalendar.jsx'
 import { DAY_NOTE_TAGS, DAY_NOTE_LABEL, DAY_NOTE_ICON, dayNoteOf, dayNoteLine, canNoteDay, withDayNote } from './lib/day-notes.js'
 
 const S = () => useStore.getState().S
@@ -1020,7 +1023,7 @@ function ExerciseDetail({ ex, close }) {
     {/* The catalogue is community-edited (catalogue/README.md): a wrong muscle, a clumsy step or a
         missing translation is one tap from an issue that already names the exercise. */}
     {!isCustomEx(ex) && !ex.missing && <a className="small dim exfix-link" target="_blank" rel="noopener"
-      href={'https://github.com/DuarteSantos8/openGym/issues/new?template=exercise.yml&exercise=' + encodeURIComponent(ex.id + ', ' + ex.n)}>
+      href={'https://github.com/Sosoisworking/openGym/issues/new?template=exercise.yml&exercise=' + encodeURIComponent(ex.id + ', ' + ex.n)}>
       <Icon name="pencil" /> {t('Suggest a fix for this exercise')}</a>}
   </>
 }
@@ -2129,7 +2132,7 @@ export async function exportPlanFile() {
   const st = S(), user = useStore.getState().user
   const bundle = buildPlanBundle(st, user?.name ? t('{0}’s plan', user.name) : '')
   const json = JSON.stringify(bundle, null, 2)
-  const name = 'opengym-plan-' + todayISO() + '.json'
+  const name = 'tarnished-plan-' + todayISO() + '.json'
   if (MOBILE) { try { await shareExport(json, name) } catch (e) { /* dismissed */ } return }
   const blob = new Blob([json], { type: 'application/json' })
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href)
@@ -2169,7 +2172,7 @@ function PlanTools({ close }) {
     <h3>{t('Share your plan')}</h3>
     <div className="muted small" style={{ marginBottom: 16 }}>{t('Send your routines to a friend, or put your week on paper.')}</div>
     <Button variant="primary" icon="share" onClick={exportFile} disabled={!hasRoutines}>{t('Export plan file')}</Button>
-    <div className="dim small" style={{ margin: '7px 2px 0', lineHeight: 1.4 }}>{t('A small file a friend can import into their own openGym. Routines only, none of your workouts or weigh-ins.')}</div>
+    <div className="dim small" style={{ margin: '7px 2px 0', lineHeight: 1.4 }}>{t('A small file a friend can import into their own Tarnished. Routines only, none of your workouts or weigh-ins.')}</div>
     <div style={{ height: 12 }} />
     <Button variant="tinted" icon="note" onClick={() => { close(); printWholePlan() }} disabled={!hasRoutines}>{t('Print / Save as PDF')}</Button>
     <div className="dim small" style={{ margin: '7px 2px 0', lineHeight: 1.4 }}>{t('A clean printout, one page per plan. No exercise ever gets split across pages.')}</div>
@@ -2618,10 +2621,10 @@ function ShareWorkoutImage({ w, nameOf, close }) {
     return () => { alive = false }
   }, [model, withMap, st.body])
   useEffect(() => () => { if (shown.current) URL.revokeObjectURL(shown.current) }, [])
-  const name = 'opengym-workout-' + (workoutDay(w) || todayISO()) + '.png'
+  const name = 'tarnished-workout-' + (workoutDay(w) || todayISO()) + '.png'
   const share = async () => {
     setBusy(true)
-    await shareImage(img.blob, name, w.name || 'openGym')
+    await shareImage(img.blob, name, w.name || 'Tarnished')
     setBusy(false)
     close()
   }
@@ -2644,7 +2647,7 @@ function ShareWorkoutImage({ w, nameOf, close }) {
 async function workoutCardImage(model, { map, body }) {
   const root = getComputedStyle(document.documentElement)
   const css = (name, fallback) => root.getPropertyValue(name).trim() || fallback
-  const colors = { bg: css('--bg', '#000'), surface: css('--surface', '#1c1c1e'), tile: css('--surface-2', '#2c2c2e'), label: css('--label', '#fff'), label2: css('--label-2', '#999'), acc: css('--acc', '#30d158') }
+  const colors = { bg: css('--bg', '#1d1613'), surface: css('--surface', '#2a211c'), tile: css('--surface-2', '#362b25'), label: css('--label', '#e4dacc'), label2: css('--label-2', '#988f86'), acc: css('--acc', '#8a9a5b') }
   // The body geometry is ~90 KB and lazy everywhere else too (components/BodyMap.jsx).
   const geometry = map && model.levels ? (await import('./lib/body-paths.js')).default : null
   const shape = geometry && (geometry[body] || geometry.male)
@@ -2688,37 +2691,11 @@ export const workoutDetailSheet = w => ui().openSheet(close => <WorkoutDetail w=
 /* ============================ calendar ============================ */
 function Calendar({ start, close }) {
   const st = useStore(s => s.S)
-  const [cur, setCur] = useState(() => { const d = start ? new Date(start) : new Date(); d.setDate(1); return d })
+  const [cur, setCur] = useState(() => { const d = start ? dateOfISO(start) : new Date(); d.setDate(1); return d })
   const y = cur.getFullYear(), mo = cur.getMonth()
-  const byDay = {}
-  st.workouts.forEach(w => {
-    const day = workoutDay(w)
-    if (day) (byDay[day] = byDay[day] || []).push(w)
-  })
-  // Which column the 1st sits in, and therefore how many blanks come before it.
-  const ws = weekStartOf(st)
-  const startOffset = weekDayOffset(new Date(y, mo, 1).getDay(), ws)
-  const daysIn = new Date(y, mo + 1, 0).getDate()
   const monthWs = st.workouts.filter(w => workoutDay(w)?.startsWith(y + '-' + String(mo + 1).padStart(2, '0')))
   const monthVol = monthWs.reduce((a, w) => a + (w.vol || 0), 0)
   const monthMs = monthWs.reduce((a, w) => a + Math.max(0, (w.end || w.start) - w.start), 0)
-  const cells = []
-  for (let i = 0; i < startOffset; i++) cells.push(<div key={'e' + i} />)
-  for (let d = 1; d <= daysIn; d++) {
-    const iso = y + '-' + String(mo + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0')
-    // A fulfilled pin (a coach session pinned here and since done) reads as no override, as it does everywhere else.
-    const ws = byDay[iso], planned = effectiveRoutineIds(st, iso).length > 0, ovr = st.dayPlan[iso] !== undefined && pinState(st, st.dayPlan[iso]) !== 'done'
-    // A day off with a note on it (#261) shows the note's dot instead of the plan's, and its
-    // note as the tooltip; tapping it opens the day sheet, where the note is.
-    const note = !ws && dayNoteOf(st, iso)
-    const dotCls = ws ? 'done' : note ? 'noted' : ovr && planned ? 'ovr' : planned ? 'plan' : ''
-    cells.push(<button key={d} className={'cal-d' + (ws ? ' has' : '') + (note ? ' noted' : '') + (iso === todayISO() ? ' today' : '')}
-      title={note ? dayNoteLine(note, t) : undefined} onClick={() => {
-      if (!ws) { close(); dayOverrideSheet(iso); return }
-      if (ws.length === 1) { close(); workoutDetailSheet(ws[0]); return }
-      close(); ui().openSheet(c2 => <><h3>{fmtDate(iso, true)}</h3><div className="list">{ws.map(w => <WorkoutRow key={w.id} w={w} onClick={() => { c2(); workoutDetailSheet(w) }} />)}</div></>)
-    }}><span>{d}</span><i className={dotCls} /></button>)
-  }
   return <>
     <div className="row between" style={{ marginBottom: 2 }}>
       <button className="iconbtn" onClick={() => setCur(new Date(y, mo - 1, 1))} aria-label={t('Previous month')}><Icon name="chevronLeft" /></button>
@@ -2726,18 +2703,48 @@ function Calendar({ start, close }) {
       <button className="iconbtn" onClick={() => setCur(new Date(y, mo + 1, 1))} aria-label={t('Next month')}><Icon name="chevronRight" /></button>
     </div>
     <div className="small muted" style={{ textAlign: 'center' }}>{monthWs.length ? `${tn('{0} workout', '{0} workouts', monthWs.length)} · ${fmtDur(monthMs)} · ${fmtVol(monthVol, st.unit)}` : t('No workouts this month')}</div>
-    <div className="cal-grid">{weekOrder(ws).map(d => <div key={d} className="cal-h">{t(DAYS[d])}</div>)}{cells}</div>
-    <div className="cal-legend">
-      <span><i style={{ background: 'var(--acc)' }} />{t('Trained')}</span>
-      <span><i style={{ background: 'var(--label-3)' }} />{t('Planned')}</span>
-      <span><i style={{ background: 'var(--orange)' }} />{t('Rescheduled')}</span>
-      {Object.keys(st.dayNotes || {}).some(k => k.startsWith(y + '-' + String(mo + 1).padStart(2, '0')) && dayNoteOf(st, k)) &&
-        <span><i style={{ background: 'var(--indigo)' }} />{t('Day note')}</span>}
-    </div>
-    <div className="small dim" style={{ textAlign: 'center', marginTop: 10 }}>{t('Tap a trained day for details · tap any other day to plan a session')}</div>
+    <MonthCalendar S={st} month={cur} onDay={iso => { close(); daySheet(iso) }} />
+    <div className="small dim" style={{ textAlign: 'center', marginTop: 10 }}>{t('Tap a day to see it: workouts, habits, weigh-in and plan')}</div>
   </>
 }
 export const calendarSheet = start => ui().openSheet(close => <Calendar start={start} close={close} />)
+
+// One day, everything on it: what was trained (or is planned), the habits ticked that day, the
+// weigh-in and the note. The calendar opens it for any day; changing the plan is one row further
+// (DayOverride), and so is a workout's detail.
+function DaySheet({ iso, close }) {
+  const st = useStore(s => s.S)
+  const today = todayISO()
+  // By workoutDay, as the calendar marks them: an old entry with no usable `d` still lands on its start day.
+  const ws = st.workouts.filter(w => workoutDay(w) === iso)
+  const planned = effectiveRoutineIds(st, iso).map(id => st.routines.find(r => r.id === id)?.name).filter(Boolean)
+  const weighIn = st.bodyweight.find(b => b.d === iso)
+  const note = dayNoteOf(st, iso)
+  const habits = dayHabits(st, iso)
+  const future = iso > today
+  return <>
+    <h3>{fmtDate(iso, true, iso.slice(0, 4) !== today.slice(0, 4))}</h3>
+    {ws.length > 0 && <div className="day-sect"><h4>{tn('{0} workout', '{0} workouts', ws.length)}</h4>
+      <div className="list">{ws.map(w => <WorkoutRow key={w.id} w={w} onClick={() => { close(); workoutDetailSheet(w) }} />)}</div></div>}
+    <div className="day-sect"><h4>{ws.length ? t('Plan') : future || iso === today ? t('Planned') : t('Workout')}</h4>
+      <div className="item" {...tappable(() => { close(); dayOverrideSheet(iso) })}>
+        <span className="lrow-i" style={planned.length ? undefined : { background: 'var(--surface-3)' }}><Icon name={planned.length ? 'calendar' : 'moon'} /></span>
+        <div className="grow"><div className="tt">{planned.length ? deriveSessionName(planned) : t('Rest day')}</div>
+          <div className="ss">{future || iso === today ? t('Change what this day trains') : ws.length ? t('Plan or log another session') : t('Log it, add a note or change it')}</div></div>
+        <Icon name="chevronRight" className="chev" />
+      </div></div>
+    {habits.total > 0 && <div className="day-sect"><h4>{t('Habits')} · {t('{0} of {1}', habits.done, habits.total)}</h4>
+      {future ? <div className="small dim">{t('Habits can be ticked on the day.')}</div> : <HabitRows iso={iso} showStreak={false} />}</div>}
+    {weighIn && <div className="day-sect"><h4>{t('Body weight')}</h4><div className="tt">{fmtNum(weighIn.w)} {st.unit}</div></div>}
+    {note && <div className="day-sect"><h4>{t('Day note')}</h4>
+      <div className="item day-note-row" {...tappable(() => { close(); dayNoteSheet(iso) })}>
+        <span className="lrow-i" style={{ background: 'var(--surface-3)' }}><Icon name={note.tag ? DAY_NOTE_ICON[note.tag] : 'note'} /></span>
+        <div className="grow"><div className="tt">{dayNoteLine(note, t)}</div></div>
+        <Icon name="pencil" className="chev" />
+      </div></div>}
+  </>
+}
+export const daySheet = iso => ui().openSheet(close => <DaySheet iso={iso} close={close} />)
 
 /* shared small workout row (used in lists) */
 export function WorkoutRow({ w, onClick }) {

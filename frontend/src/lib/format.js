@@ -6,6 +6,9 @@ export const todayISO = () => {
 }
 export const isoOf = d =>
   d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+// An ISO day as a local Date at noon. `new Date('YYYY-MM-DD')` is UTC midnight, which west of UTC is
+// still the day before: a calendar opened on the 1st of a month showed the month before in Toronto.
+export const dateOfISO = iso => new Date(iso + 'T12:00:00')
 
 export const DAYN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 export const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
@@ -139,9 +142,9 @@ export const localTZ = () => { try { return Intl.DateTimeFormat().resolvedOption
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
 // What each accent is called, for a screen reader (Settings' swatches carry no text).
-export const ACCENT_NAMES = { lime: 'Green', sky: 'Blue', orange: 'Orange', violet: 'Purple', pink: 'Pink', red: 'Red', teal: 'Teal', gold: 'Yellow' }
-export const ACCENTS = { lime: '#30d158', sky: '#0a84ff', orange: '#ff9f0a', violet: '#bf5af2', pink: '#ff375f', red: '#ff453a', teal: '#40c8e0', gold: '#ffd60a' }
+export const ACCENT_NAMES = { lime: 'Moss', sky: 'Slate', orange: 'Ember', violet: 'Heather', pink: 'Clay', red: 'Rust', teal: 'Verdigris', gold: 'Brass' }
+export const ACCENTS = { lime: '#8a9a5b', sky: '#7d9fba', orange: '#d98a3d', violet: '#a874ae', pink: '#c27c6b', red: '#d2693f', teal: '#5fa18b', gold: '#d9b45a' }
 // Text drawn on top of that swatch. Matches the --on-acc values in index.css.
-export const ACCENT_INK = { lime: '#000000', sky: '#ffffff', orange: '#000000', violet: '#ffffff', pink: '#ffffff', red: '#ffffff', teal: '#000000', gold: '#000000' }
+export const ACCENT_INK = { lime: '#1d1613', sky: '#1d1613', orange: '#1d1613', violet: '#1d1613', pink: '#1d1613', red: '#1d1613', teal: '#1d1613', gold: '#1d1613' }
 // Android color int, opaque. JS bitwise ops are signed, so the high bit is cleared back to unsigned.
 export const argb = hex => (0xff000000 | parseInt(hex.slice(1), 16)) >>> 0

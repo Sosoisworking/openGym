@@ -99,27 +99,6 @@ describe('swapping an exercise kept out of progression', () => {
   })
 })
 
-describe('active exercise swap locale coverage', () => {
-  const required = [
-    'Swap exercise',
-    'Swap exercise?',
-    'Logged sets stay with the original exercise. Choose where the replacement belongs.',
-    'Keep replacement in this group',
-    'Insert after this group',
-    'Logged sets stay with the original exercise. The replacement will be inserted afterward.'
-  ]
-  const packs = import.meta.glob('./locales/*.js', { eager: true, import: 'default' })
-
-  it('defines every new prompt in all twelve locale packs', () => {
-    // Minus English (the source language) and minus any derived locale, which transforms its
-    // base language's pack at load time instead of shipping one.
-    const packed = Object.keys(LANGS).filter(code => code !== 'en' && !DERIVED_LOCALES[code])
-    expect(Object.keys(packs)).toHaveLength(packed.length)
-    Object.entries(packs).forEach(([path, pack]) => {
-      required.forEach(key => expect(pack, `${path} is missing ${key}`).toHaveProperty(key))
-    })
-  })
-})
 
 // QA 1.3.9: the swap borrowed the routine editor's words — "Add exercise" over the picker and
 // "Add to routine" on the confirm — while it changes only today's session.

@@ -1,7 +1,7 @@
 // Share a weekly plan.
 //
 // Two jobs:
-//  1. A small, self-contained file a friend can import into THEIR openGym — just the
+//  1. A small, self-contained file a friend can import into THEIR Tarnished — just the
 //     routines + the week schedule + the custom exercises those routines use. It never
 //     carries workouts, weigh-ins or settings, and importing MERGES (adds routines with
 //     fresh ids) so nothing the friend already has is touched.
@@ -30,7 +30,7 @@ const PLAN_UNITS = new Set(['kg', 'lb'])
 // A plan's numbers are in the unit that wrote it. Missing unit is deliberately legacy-compatible:
 // old files were read as already being in the recipient's unit, so keep their values unchanged.
 const planUnit = value => value === 'lbs' ? 'lb' : PLAN_UNITS.has(value) ? value : null
-const unitError = () => { throw new Error(t('this isn’t an openGym plan file')) }
+const unitError = () => { throw new Error(t('this isn’t an Tarnished plan file')) }
 
 function declaredPlanUnit(data) {
   let declared = null
@@ -221,7 +221,7 @@ export function buildPlanBundle(S, name) {
  * is trained.
  */
 export function parsePlan(raw, destinationUnit = 'kg') {
-  const notPlan = () => Object.assign(new Error(t('this isn’t an openGym plan file')), { code: 'not-plan' })
+  const notPlan = () => Object.assign(new Error(t('this isn’t an Tarnished plan file')), { code: 'not-plan' })
   let data = raw
   if (typeof raw === 'string') { try { data = JSON.parse(raw) } catch { throw notPlan() } }
   const destination = planUnit(destinationUnit)
@@ -422,13 +422,13 @@ export function planPrintHTML(S, owner, { routineId } = {}) {
   * { box-sizing: border-box; }
   html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body {
-    margin: 0; color: #16181d; background: #fff;
+    margin: 0; color: #1d1613; background: #fff;
     font: 14px/1.5 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     font-variant-numeric: tabular-nums;
   }
   .doc { max-width: 720px; margin: 0 auto; }
-  header { border-bottom: 2px solid #16181d; padding-bottom: 12px; margin-bottom: 20px; }
-  header .kicker { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #6a7a3a; font-weight: 700; }
+  header { border-bottom: 2px solid #1d1613; padding-bottom: 12px; margin-bottom: 20px; }
+  header .kicker { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #4b5e2a; font-weight: 700; }
   header h1 { font-size: 27px; letter-spacing: -.02em; margin: 3px 0 0; }
   header .sub { color: #6b7180; font-size: 13px; margin-top: 4px; }
 
@@ -437,7 +437,7 @@ export function planPrintHTML(S, owner, { routineId } = {}) {
   .week { border: 1px solid #e4e6ec; border-radius: 10px; overflow: hidden; margin-bottom: 26px; break-inside: avoid; page-break-inside: avoid; }
   .w-row { display: flex; align-items: baseline; padding: 8px 14px; border-top: 1px solid #eef0f4; }
   .w-row:first-child { border-top: 0; }
-  .w-day { width: 116px; font-weight: 600; color: #16181d; flex: none; }
+  .w-day { width: 116px; font-weight: 600; color: #1d1613; flex: none; }
   .w-r { text-transform: capitalize; }
   .rest, .w-r .rest { color: #a2a8b6; text-transform: none; }
 
@@ -458,21 +458,21 @@ export function planPrintHTML(S, owner, { routineId } = {}) {
   .ex-note { color: #6a7080; font-size: 12px; margin-top: 2px; }
   .ex.empty, .none { color: #a2a8b6; }
 
-  .ss { break-inside: avoid; page-break-inside: avoid; border-inline-start: 3px solid #cfe08a; padding-inline-start: 12px; margin: 4px 0; }
-  .ss-tag { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #6a7a3a; font-weight: 700; padding-top: 4px; }
+  .ss { break-inside: avoid; page-break-inside: avoid; border-inline-start: 3px solid #a9b97a; padding-inline-start: 12px; margin: 4px 0; }
+  .ss-tag { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #4b5e2a; font-weight: 700; padding-top: 4px; }
   .ss .ex:first-of-type { padding-top: 2px; }
 
   footer { margin-top: 26px; padding-top: 10px; border-top: 1px solid #eef0f4; color: #a2a8b6; font-size: 11px; text-align: center; }
 </style></head>
 <body><div class="doc">
   <header>
-    <div class="kicker">openGym</div>
+    <div class="kicker">Tarnished</div>
     <h1>${esc(title)}</h1>
     ${sub ? `<div class="sub">${sub}</div>` : ''}
   </header>
   ${week}
   ${body}
-  <footer>${esc(t('Made with openGym'))} · opengym.ch</footer>
+  <footer>${esc(t('Made with Tarnished'))}</footer>
 </div></body></html>`
 }
 

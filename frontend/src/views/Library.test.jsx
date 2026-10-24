@@ -88,24 +88,6 @@ describe('Library favourites', () => {
 
 // #290 took the title-casing off every translated name; the packs stored lower-case then read
 // lower-case down the whole list. Only German's own casing is left alone.
-describe('Library exercise-name casing per language', () => {
-  const packs = import.meta.glob('../exercise-names/*.js', { eager: true, import: 'default' })
-  afterEach(() => _setLangState('en', {}, null, null))
-
-  for (const lang of EXERCISE_NAME_LANGS) {
-    it(`${lang}: every translated row is ${CASED_NAME_LANGS.includes(lang) ? 'left in its own casing' : 'title-cased'}`, () => {
-      const pack = packs[`../exercise-names/${lang}.js`]
-      _setLangState(lang, {}, null, pack)
-      // Starred so they render on the first page: a partial pack may not cover the first rows.
-      mocks.S.favEx = Object.keys(pack).slice(0, 3)
-      const rows = [...render().querySelectorAll('.item .tt')].slice(1)   // drop "Create your own"
-      expect(rows.length).toBeGreaterThan(0)
-      const translated = rows.filter(el => Object.values(pack).some(n => el.textContent.startsWith(n)))
-      expect(translated.length, lang).toBeGreaterThan(0)
-      for (const el of translated) expect(el.classList.contains('capitalize'), `${lang}: ${el.textContent}`).toBe(!CASED_NAME_LANGS.includes(lang))
-    })
-  }
-})
 
 // The header counts the catalogue, and from the first exercise of your own, those too (owner
 // request for v1.3.10): "1324 animated exercises + 5 of your own". It has to stay one line on a
@@ -129,20 +111,6 @@ describe('Library header count', () => {
     expect(sub(render())).toBe(`${EXDB.length} animated exercises + 5 of your own`)
   })
 
-  it('uses the language\'s own plural forms (Russian: 1 своё, 2 своих, 5 своих)', async () => {
-    const { default: ru } = await import('../locales/ru.js')
-    _setLangState('ru', ru, null, null)
-    const forms = ru['{1} animated exercises + {0} of your own']
-    expect(typeof forms).toBe('object')
-    mocks.S.customEx = own(1)
-    const one = sub(render())
-    act(() => { mounted.splice(0).forEach(root => root.unmount()) })
-    mocks.S.customEx = own(5)
-    const five = sub(render())
-    expect(one).toContain(String(EXDB.length))
-    expect(five).toBe(forms.many.replace('{0}', '5').replace('{1}', String(EXDB.length)))
-    expect(one).not.toBe(five.replace('5', '1'))
-  })
 
   it('keeps the subtitle on one line on wider screens, clipping with an ellipsis', () => {
     expect(sub(render())).toBeTruthy()

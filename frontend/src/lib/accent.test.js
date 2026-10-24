@@ -64,8 +64,8 @@ describe('contrast and the text on the accent', () => {
 })
 
 describe('readable on the theme', () => {
-  const darkPresets = ['#30d158', '#0a84ff', '#ff9f0a', '#bf5af2', '#ff375f', '#ff453a', '#40c8e0', '#ffd60a']
-  const lightPresets = ['#34c759', '#007aff', '#ff9500', '#af52de', '#ff2d55', '#ff3b30', '#30b0c7']
+  const darkPresets = ['#8a9a5b', '#7d9fba', '#d98a3d', '#a874ae', '#c27c6b', '#d2693f', '#5fa18b', '#d9b45a']
+  const lightPresets = ['#4b5e2a', '#4e6676', '#a85a1c', '#6e5374', '#9a4a3a', '#7d2f09', '#3f6b5e', '#8c6d1f']
   it('leaves every dark preset shade as it is, and darkens the light ones under 3:1', () => {
     for (const c of darkPresets) expect(adjustedIn(c, 'dark'), c).toBe(false)
     // the presets draw their own index.css shades; as an own colour, Apple's light green,
@@ -74,7 +74,7 @@ describe('readable on the theme', () => {
       const r = readableIn(c, 'light')
       for (const bg of THEMES.light.bgs) expect(contrast(r, bg), c).toBeGreaterThanOrEqual(3)
     }
-    expect(adjustedIn('#007aff', 'light')).toBe(false)
+    expect(adjustedIn('#3366ff', 'light')).toBe(false)
     expect(adjustedIn('#ffcc00', 'light')).toBe(true)
   })
   it('an own colour reaches 3:1 on both fills of either theme', () => {
@@ -102,7 +102,7 @@ describe('readable on the theme', () => {
       }
     }
     // a grey that already stands apart is left alone
-    expect(readableIn('#333333', 'light')).toBe('#333333')
+    expect(readableIn('#222222', 'light')).toBe('#222222')
     expect(readableIn('#e0e0e0', 'dark')).toBe('#e0e0e0')
     expect(isGrey('#ff00aa')).toBe(false)
   })
@@ -166,10 +166,10 @@ describe('CSS for the own colour', () => {
   })
   it('puts a preset or the own colour on the page root and takes the own colour off again', () => {
     const el = document.createElement('html')
-    applyAccent(el, '#ff00aa', 'light')
+    applyAccent(el, '#c0007a', 'light')
     expect(el.dataset.accent).toBe('custom')
-    expect(el.style.getPropertyValue('--acc')).toBe('#ff00aa')
-    expect(el.style.getPropertyValue('--on-acc')).toBe(inkOn('#ff00aa'))
+    expect(el.style.getPropertyValue('--acc')).toBe('#c0007a')
+    expect(el.style.getPropertyValue('--on-acc')).toBe(inkOn('#c0007a'))
     applyAccent(el, 'sky', 'light')
     expect(el.dataset.accent).toBe('sky')
     expect(el.style.getPropertyValue('--acc')).toBe('')
@@ -181,10 +181,10 @@ describe('CSS for the own colour', () => {
 
 describe('the native countdown colours', () => {
   it('takes a preset key or the own colour', () => {
-    expect(accentPair('sky')).toEqual({ accent: ACCENTS.sky, ink: '#ffffff' })
+    expect(accentPair('sky')).toEqual({ accent: ACCENTS.sky, ink: '#1d1613' })
     expect(accentPair('#ffd60a')).toEqual({ accent: '#ffd60a', ink: '#000000' })
-    expect(accentPair('nonsense')).toEqual({ accent: ACCENTS.lime, ink: '#000000' })
-    expect(accentPair(undefined)).toEqual({ accent: ACCENTS.lime, ink: '#000000' })
+    expect(accentPair('nonsense')).toEqual({ accent: ACCENTS.lime, ink: '#1d1613' })
+    expect(accentPair(undefined)).toEqual({ accent: ACCENTS.lime, ink: '#1d1613' })
   })
 })
 

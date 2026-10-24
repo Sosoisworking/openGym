@@ -23,8 +23,8 @@ describe('buildRestAlert', () => {
 
   it('paints the notification with the chosen accent, not the default green', () => {
     const alert = buildRestAlert({ at: now + 1000, accent: 'red', now })
-    expect(alert.accent).toBe((0xff000000 | 0xff453a) >>> 0)
-    expect(alert.ink).toBe((0xff000000 | 0xffffff) >>> 0)
+    expect(alert.accent).toBe((0xff000000 | 0xd2693f) >>> 0)
+    expect(alert.ink).toBe((0xff000000 | 0x1d1613) >>> 0)
   })
 
   it('still schedules when sound is off', () => {

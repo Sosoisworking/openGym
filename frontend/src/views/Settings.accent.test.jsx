@@ -139,7 +139,7 @@ describe('Settings: your own accent colour', () => {
   it('a preset in between keeps the colour, and one tap brings it back', () => {
     mocks.S.accent = 'custom'; mocks.S.accentCustom = '#123456'
     mount()
-    act(() => host.querySelector('.swatch[aria-label="Blue"]').click())
+    act(() => host.querySelector('.swatch[aria-label="Slate"]').click())
     expect(mocks.S.accent).toBe('sky')
     expect(mocks.S.accentCustom).toBe('#123456')
     mount()
@@ -156,7 +156,7 @@ describe('Settings: your own accent colour', () => {
     mount()
     expect(host.textContent).toContain('A touch lighter in dark mode, so you can still read it.')
     expect(host.textContent).not.toContain('A touch darker in light mode')
-    mocks.S.accentCustom = '#0a84ff'
+    mocks.S.accentCustom = '#b5532a'
     mount()
     expect(host.querySelector('.swatch-note')).toBe(null)
   })
@@ -171,7 +171,7 @@ describe('Settings: your own accent colour', () => {
   it('ignores a value that is not a colour', () => {
     mocks.S.accent = 'custom'; mocks.S.accentCustom = 'red;}'
     mount()
-    expect(host.querySelector('.lrow-v').textContent).toBe('Green')
+    expect(host.querySelector('.lrow-v').textContent).toBe('Moss')
     expect(own().classList.contains('unset')).toBe(true)
   })
 

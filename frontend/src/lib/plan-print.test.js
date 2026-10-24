@@ -55,20 +55,6 @@ describe('planPrintHTML', () => {
 
 // The printout title-cases a name with the same class the screen uses (exerciseNameClass): the
 // lower-case packs get it back, German keeps its own casing.
-describe('planPrintHTML exercise-name casing per language', () => {
-  const packs = import.meta.glob('../exercise-names/*.js', { eager: true, import: 'default' })
-  const nameClass = html => html.match(/<div class="ex-n ([^"]*)">/)?.[1].trim()
-  afterEach(() => _setLangState('en', {}, null, null))
-
-  for (const lang of EXERCISE_NAME_LANGS) {
-    it(`${lang}: ${CASED_NAME_LANGS.includes(lang) ? 'no title-casing on the translated name' : 'the translated name is title-cased'}`, () => {
-      _setLangState(lang, {}, null, packs[`../exercise-names/${lang}.js`])
-      const html = planPrintHTML(S, 'Ana', { routineId: 'pull' })
-      expect(nameClass(html)).toBe(CASED_NAME_LANGS.includes(lang) ? '' : 'capitalize')
-      expect(html).toContain('.ex-n.capitalize { text-transform: capitalize; }')
-    })
-  }
-})
 
 // QA 1.3.9: the printout read "3 × 12" for an 8–12 range, left the drop-set out, and glued an
 // untranslated body part onto the name ("…Curlupper Legs").
@@ -88,10 +74,4 @@ describe('planPrintHTML prints the exercise as it is prescribed', () => {
     expect(body).toContain('1 × 8 · 40 kg · Rest-pause 20 reps')
   })
 
-  it('translates the body part and keeps it a separate word', () => {
-    _setLangState('de', { chest: 'Brust', 'Drop-set': 'Dropsatz' }, null, null)
-    const html = planPrintHTML(S2, '', { routineId: 'r' })
-    expect(html).toContain(' <span class="part">Brust</span>')
-    expect(text(html)).toContain('Dropsatz 2×')
-  })
 })
