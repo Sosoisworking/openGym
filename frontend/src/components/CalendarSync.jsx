@@ -37,7 +37,7 @@ export default function CalendarSync() {
   const [busy, setBusy] = useState(false)
   const prefs = calPrefs(S)
   // The zone travels with the choices, so "today" on the server is the user's today.
-  const setPref = (k, v) => update(s => { s.calSync = { ...(s.calSync || {}), [k]: v, tz: localTZ() } })
+  const setPref = (k, v) => update(s => { s.calSync = { ...(s.calSync || {}), tz: localTZ(), [k]: v } })
 
   const refresh = () => {
     api('/api/google/status').then(setGoogle).catch(() => setGoogle({ enabled: false, connected: false, unreachable: true }))
@@ -45,6 +45,9 @@ export default function CalendarSync() {
   }
   useEffect(() => {
     if (!user) return
+    // The server works out "today" in this zone; keep it current (a new phone, a trip) even when
+    // no switch here is ever touched.
+    if (useStore.getState().S.calSync?.tz !== localTZ()) setPref('tz', localTZ())
     refresh()
     // Back from Google in the phone's browser: look again when the app comes to the front.
     const onShow = () => { if (document.visibilityState === 'visible') refresh() }

@@ -49,6 +49,11 @@ describe('Calendar sync', () => {
     expect(calls).toEqual([])
   })
 
+  it('records the time zone as soon as the page opens', async () => {
+    await mount()
+    expect(useStore.getState().S.calSync.tz).toBe(Intl.DateTimeFormat().resolvedOptions().timeZone)
+  })
+
   it('writes each switch into the profile with the time zone', async () => {
     await mount()
     const habits = rowTitled('Habits')
