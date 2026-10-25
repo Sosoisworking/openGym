@@ -14,7 +14,7 @@ vi.mock('react-router-dom', () => ({ useNavigate: () => () => {} }))
 vi.mock('../sheets.jsx', () => ({
   starterPlanSheet: vi.fn(), bwSheet: vi.fn(), goalSheet: vi.fn(), dayOverrideSheet: vi.fn(),
   calendarSheet: vi.fn(), startFlow: vi.fn(), bwDeltaColor: () => '', weighInsSheet: vi.fn(),
-  dayAssignSheet: vi.fn(), planToolsSheet: vi.fn(),
+  dayAssignSheet: vi.fn(), weekEditorSheet: vi.fn(), planToolsSheet: vi.fn(),
 }))
 
 let host, root
@@ -31,7 +31,7 @@ afterEach(() => {
   host.remove()
 })
 
-const starterButton = () => [...host.querySelectorAll('button')].find(b => b.textContent === 'Load starter plan')
+const starterButton = () => [...host.querySelectorAll('button')].find(b => b.textContent === 'Choose a split')
 
 describe.each([['Home', Home], ['Plan', Plan]])('%s empty state', (_name, View) => {
   it('opens the starter plan chooser instead of loading one plan blind', () => {

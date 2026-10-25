@@ -8,7 +8,7 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Plan from './Plan.jsx'
-import { dayAssignSheet, menuSheet } from '../sheets.jsx'
+import { dayAssignSheet, menuSheet, weekEditorSheet } from '../sheets.jsx'
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
@@ -34,7 +34,7 @@ vi.mock('react-router-dom', () => ({ useNavigate: () => mocks.nav }))
 vi.mock('../lib/mobile.js', () => ({ MOBILE: false, isAndroid: () => Promise.resolve(false), shareExport: vi.fn(), syncReminder: vi.fn() }))
 vi.mock('../lib/coach.js', () => ({ coachAvailable: () => mocks.coach }))
 vi.mock('../sheets.jsx', () => ({
-  starterPlanSheet: vi.fn(), dayAssignSheet: vi.fn(), menuSheet: vi.fn(), confirmSheet: vi.fn(),
+  starterPlanSheet: vi.fn(), dayAssignSheet: vi.fn(), weekEditorSheet: vi.fn(), menuSheet: vi.fn(), confirmSheet: vi.fn(),
   planHasRoutines: s => (s.routines || []).some(r => r.ex.length), exportPlanFile: vi.fn(), printWholePlan: vi.fn(), importPlanFile: vi.fn(),
 }))
 
@@ -83,6 +83,14 @@ describe('Plan — the weekday rows', () => {
     mount()
     act(() => { day('Friday').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })) })
     expect(dayAssignSheet).toHaveBeenCalledWith(5)
+  })
+
+  it('has an Edit week button over the days that opens the whole week at once', () => {
+    mount()
+    const edit = [...host.querySelectorAll('button')].find(b => b.textContent === 'Edit week')
+    expect(edit).toBeTruthy()
+    act(() => edit.click())
+    expect(weekEditorSheet).toHaveBeenCalledTimes(1)
   })
 })
 

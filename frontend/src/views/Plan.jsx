@@ -5,7 +5,7 @@ import { useUI } from '../store/useUI.js'
 import { DAYN, DAYS, weekOrder, weekStartOf, uid, exCount, routineCount, todayISO, fmtDate } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import {
-  dayAssignSheet, starterPlanSheet, confirmSheet, menuSheet,
+  dayAssignSheet, weekEditorSheet, starterPlanSheet, confirmSheet, menuSheet,
   planHasRoutines, exportPlanFile, printWholePlan, importPlanFile,
 } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
@@ -152,7 +152,7 @@ export default function Plan() {
         { icon: 'share', label: t('Export plan file'), sub: t('A small file a friend can import into their own Tarnished. Routines only, none of your workouts or weigh-ins.'), disabled: !has, onClick: exportPlanFile },
         { icon: 'note', label: t('Print / Save as PDF'), disabled: !has, onClick: printWholePlan },
         { icon: 'download', label: t('Import a plan file'), onClick: () => fileRef.current?.click() },
-        { icon: 'clipboard', label: t('Load starter plan'), onClick: starterPlanSheet },
+        { icon: 'grid', label: t('Choose a split'), onClick: starterPlanSheet },
       ],
     })
   }
@@ -288,9 +288,15 @@ function Schedule({ S, update, nav, mode }) {
       </Row>
     </Section>
 
+    {/* Ready-made weeks to start from or switch to (lib/starter.js): each loads as ordinary routines. */}
+    <Section title={t('Workout splits')}>
+      <Row icon="grid" iconTint="var(--teal)" title={t('Choose a split')} accessory="chevron" onClick={starterPlanSheet}
+        subtitle={t('Push / Pull / Legs, Upper / Lower, Bro, Batman and more. See the week first, then load it.')} />
+    </Section>
+
     {!S.routines.length && <div className="empty plan-empty">
-      <div className="ico"><Icon name="clipboard" /></div>{t('No routines yet.')}<br />{t('Make one, or grab the starter plan to get going.')}
-      <div style={{ marginTop: 12 }}><Button icon="clipboard" onClick={starterPlanSheet}>{t('Load starter plan')}</Button></div>
+      <div className="ico"><Icon name="clipboard" /></div>{t('No routines yet.')}<br />{t('Make one, or start from a workout split.')}
+      <div style={{ marginTop: 12 }}><Button icon="grid" onClick={starterPlanSheet}>{t('Choose a split')}</Button></div>
     </div>}
 
     {/* A queue payload that arrived unusable: a fix-up, shown whichever way you train. Giving it
@@ -303,9 +309,12 @@ function Schedule({ S, update, nav, mode }) {
     </div>}
 
     {mode === 'week' ? <>
-      <h4 className="sec">{t('This week')}</h4>
+      <div className="row between plan-sec-h">
+        <h4 className="sec">{t('This week')}</h4>
+        {S.routines.length > 0 && <Button size="sm" variant="tinted" icon="pencil" onClick={weekEditorSheet}>{t('Edit week')}</Button>}
+      </div>
       <div className="list plan-week">{weekOrder(ws).map(d => dayRow(d))}</div>
-      <p className="sect-f">{t('Want two routines on one day? Tap the day and pick both.')}</p>
+      <p className="sect-f">{t('Tap a day to change it, or Edit week to rearrange them all at once. Two routines on one day? Tap the day and pick both.')}</p>
     </> : <div className="rotation">
       <div className="row between plan-sec-h">
         <h4 className="sec">{t('The loop')}{external && <span className="tag" style={{ marginInlineStart: 8 }}>{t('Externally managed')}</span>}</h4>
@@ -452,8 +461,8 @@ function Routines({ S, update, nav }) {
         })}</div>}
       <p className="sect-f">{edit ? t('Drag to reorder. Tap the minus to delete.') : t('Tap a routine to edit it. Reorder and delete are behind Edit.')}</p>
     </> : <>
-      <div className="empty"><div className="ico"><Icon name="clipboard" /></div>{t('No routines yet.')}<br />{t('Make one, or grab the starter plan to get going.')}</div>
-      <Button icon="clipboard" onClick={starterPlanSheet}>{t('Load starter plan')}</Button>
+      <div className="empty"><div className="ico"><Icon name="clipboard" /></div>{t('No routines yet.')}<br />{t('Make one, or start from a workout split.')}</div>
+      <Button icon="grid" onClick={starterPlanSheet}>{t('Choose a split')}</Button>
     </>}
   </>
 }

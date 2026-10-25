@@ -636,7 +636,7 @@ export default function Settings({ page = null, find = null, via = null }) {
         </Row>
       </Section>
       <Section>
-        <Row icon="clipboard" iconTint="var(--green)" title={t('Load starter plan')} accessory="chevron" onClick={starterPlanSheet} />
+        <Row icon="grid" iconTint="var(--green)" title={t('Choose a split')} accessory="chevron" onClick={starterPlanSheet} />
       </Section>
     </>,
 

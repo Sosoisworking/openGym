@@ -90,7 +90,7 @@ export const SEARCH = [
   // Plan & schedule
   { page: 'plan', title: 'How you train', icon: 'repeat', tint: 'var(--orange)', kw: 'scheduling schedule rotation fixed week split loop round cycle', opts: ['Fixed Week', 'Rotation'] },
   { page: 'plan', title: 'Week starts on', icon: 'calendar', tint: 'var(--orange)', kw: 'monday sunday first day week', opts: ['Monday', 'Sunday'], tkw: () => t('week start') },
-  { page: 'plan', title: 'Load starter plan', icon: 'clipboard', tint: 'var(--green)', kw: 'starter template beginner program routine' },
+  { page: 'plan', title: 'Choose a split', icon: 'grid', tint: 'var(--green)', kw: 'split splits starter template beginner program routine ppl push pull legs upper lower full body bro batman 5x5' },
   // Calendar sync (components/CalendarSync.jsx): signed in only, as both ways out run on the server.
   // The Google and link rows depend on the server's answer, so the always-there switches carry
   // their words for the search.

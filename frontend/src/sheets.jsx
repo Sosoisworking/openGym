@@ -3,7 +3,7 @@ import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { EXDB, EXIDX, BODYPARTS, isCardio, isBodyweightEq, allExercises, equipmentOf, byCategory, smOf, searchExercises, similarExercises, exOr, isAssisted, betterWeight, beatsWeight, isCustomEx } from './lib/exercises.js'
 import { activeProfile, exAvailable, ALL_EQUIPMENT, newProfile, profileEquipment, ACC_V } from './lib/equipment.js'
-import { fmtDate, fmtDateRange, fmtNum, fmtPlate, exerciseNameText, fmtVol, fmtDur, durPart, todayISO, isoOf, dateOfISO, uid, exCount, routineCount, setsWorkCount, DAYN, weekStartOf, MONTHS_LONG, ACCENTS } from './lib/format.js'
+import { fmtDate, fmtDateRange, fmtNum, fmtPlate, exerciseNameText, fmtVol, fmtDur, durPart, todayISO, isoOf, dateOfISO, uid, exCount, routineCount, setsWorkCount, DAYN, DAYS, weekOrder, weekStartOf, MONTHS_LONG, ACCENTS } from './lib/format.js'
 import { lastEntryFor, bestWeightFor, bestWeightForEntry, buildSets, effectiveRoutineIds, workoutDay, workoutVolume, setsDone, setsDoneActive, setUnitsTotal, lastBW, sessionSections, setLabel, defaultConfig, cleanupSg, modeOf, effortOf, EFFORT, capEffort, stepEffort, isBw, isPerSide, sideReps, workSetsDone, applyIntensifierPlan, MAX_PLANNED_WARMUPS, NOTE_MAX } from './lib/history.js'
 import { usesBar, defaultBarWeight, hasBarOverride, isNoBar } from './lib/bar.js'
 import { PLATE_SIZES, pairsOf, ownsPlates, withPlatePairs, withStandardPlates, withLoadKind, loadKindFor, baseWeightFor, dropGrid } from './lib/plates.js'
@@ -11,7 +11,7 @@ import { toScale, rirOf, EFFORT_PRESETS, effortColor } from './lib/effort.js'
 import { beep, vibrate } from './lib/sound.js'
 import { t, tn, dateLocale, instrFor, instrTranslated, descFor, exerciseNameFor, exerciseNameClass, getLang, useLang } from './lib/i18n.js'
 import { nav, closeThenNav, navToWorkout } from './lib/nav.js'
-import { buildStarterPlan, starterPlanDays, starterPlanOptions } from './lib/starter.js'
+import { buildStarterPlan, starterPlanDays, starterPlanOptions, previewPlan } from './lib/starter.js'
 import Media, { Thumb } from './components/Media.jsx'
 import CustomMediaField from './components/CustomMediaField.jsx'
 import WorkoutMediaSection, { workoutMediaCount } from './components/WorkoutMedia.jsx'
@@ -23,7 +23,7 @@ import { durationSheet } from './components/DurationWheel.jsx'
 import { SG_NAME_MAX } from './lib/superset-meta.js'
 import { REST_MAX, fmtRest } from './lib/duration.js'
 import Icon from './components/Icon.jsx'
-import { Button, Slider, Switch, Segmented, SelectRow, Row, TextField, NumberField, MultiSelectRow } from './components/ui.jsx'
+import { Button, Slider, Switch, Segmented, SelectRow, Row, Section, TextField, NumberField, MultiSelectRow } from './components/ui.jsx'
 import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
 import BodyMap from './components/BodyMap.jsx'
 import MuscleExplorer from './components/MuscleExplorer.jsx'
@@ -163,29 +163,32 @@ export function confirmSheet(opts) {
   ui().openSheet(close => <ConfirmDialog {...opts} close={close} />, { kind: 'center', ...(opts.locked ? { locked: true } : {}) })
 }
 
-/* ============================ starter plan ============================ */
-// Plan names and blurbs live here, not in lib/starter.js: check-source-strings.mjs only finds
-// string literals written inside a t() call, so copy parked in the catalog and passed in as a
-// variable is invisible to it — it would quietly stay English in every language.
-const PLAN_COPY = {
-  ppl: () => ({ name: t('Push / Pull / Legs'), about: t('Push, pull and legs each get their own day.') }),
-  'upper-lower': () => ({ name: t('Upper / Lower'), about: t('Upper body twice, lower body twice.') }),
-  'full-body': () => ({ name: t('Full Body'), about: t('Three sessions, the whole body each time.') }),
-  '5x5': () => ({ name: t('5×5'), about: t('Five sets of five on the main barbell lifts.') })
+/* ============================ workout splits ============================ */
+// The splits a plan can start from (lib/starter.js): Kusuo's, and the 5×5.
+const SPLIT_COPY = {
+  ppl: () => ({ name: t('Push / Pull / Legs'), about: t('Push, pull and legs, each on a day of its own.') }),
+  'ppl-abs': () => ({ name: t('Push / Pull / Legs + Abs'), about: t('The classic three, plus a day for your core.') }),
+  'ppl-ul': () => ({ name: t('Push / Pull / Legs + Upper / Lower'), about: t('The classic three, then upper and lower: everything twice a week.') }),
+  'upper-lower': () => ({ name: t('Upper / Lower'), about: t('Upper body twice, lower body twice, on A and B days.') }),
+  'full-body': () => ({ name: t('Full body'), about: t('Three sessions, the whole body each time.') }),
+  bro: () => ({ name: t('Bro split'), about: t('One muscle group a day: chest, back, shoulders, legs, arms.') }),
+  batman: () => ({ name: t('Batman split'), about: t('High-volume pairings, a kettlebell circuit to finish, Wednesday off.') }),
+  '5x5': () => ({ name: t('5×5'), about: t('Five sets of five on the main barbell lifts.') }),
 }
 
-// Adds the plan's routines (reusing one you already have under the same name) and puts them on
-// its weekdays. Existing routines are never touched
-// and only the weekdays the plan asks for are reassigned; an id with no plan behind it changes
-// nothing at all. planId is deliberately required — a default invites `onClick={loadStarterPlan}`,
-// which hands the click event in as the plan and silently loads nothing.
+// Adds the split's routines (reusing one you already have under the same name) and puts them on
+// its weekdays, and adds any exercise of its own you do not have yet. Existing routines are never
+// touched and only the weekdays the split asks for are reassigned; an id with no split behind it
+// changes nothing at all. planId is deliberately required — a default invites
+// `onClick={loadStarterPlan}`, which hands the click event in as the plan and silently loads nothing.
 export function loadStarterPlan(planId, profile) {
-  const plan = buildStarterPlan(planId, profile ? profileEquipment(profile) : undefined)
+  const plan = buildStarterPlan(planId, profile ? profileEquipment(profile) : undefined, useStore.getState().S.customEx)
   if (!plan) return false
   update(st => {
-    // Loading the same plan again reuses the routines it added last time (same name, same
+    if (plan.customEx.length) st.customEx = [...(st.customEx || []), ...plan.customEx]
+    // Loading the same split again reuses the routines it added last time (same name, same
     // exercises) for the weekdays instead of a second Upper A, Lower A, ... under the same names.
-    // A plan fitted to different equipment has other exercises, so it is added alongside.
+    // A split fitted to different equipment has other exercises, so it is added alongside.
     const idOf = {}
     const sameLift = (a, b) => a.ex.length === b.ex.length && a.ex.every((e, i) => e.id === b.ex[i].id)
     plan.routines.forEach(r => {
@@ -195,50 +198,83 @@ export function loadStarterPlan(planId, profile) {
     })
     plan.schedule.forEach(({ day, routineId }) => { st.week[day] = [idOf[routineId]] })
   })
-  if (plan.fit) toast(t('{0} loaded, fitted to "{1}": {2} swapped, {3} dropped', PLAN_COPY[planId]().name, profile.name, plan.fit.swapped, plan.fit.dropped))
-  else toast(t('{0} loaded', PLAN_COPY[planId]().name))
+  if (plan.fit) toast(t('{0} loaded, fitted to "{1}": {2} swapped, {3} dropped', SPLIT_COPY[planId]().name, profile.name, plan.fit.swapped, plan.fit.dropped))
+  else toast(t('{0} loaded', SPLIT_COPY[planId]().name))
   return true
 }
 
 // Intl joins the days the way each language does it — "and" vs "und", "、" in Chinese.
 const dayList = days => new Intl.ListFormat(dateLocale()).format(days.map(d => t(DAYN[d])))
 
-function StarterPlanChooser({ close }) {
-  const week = useStore(s => s.S.week)
-  const routines = useStore(s => s.S.routines)
-  const profiles = useStore(s => s.S.equipProfiles) || []
-  // Fitting starts on for the profile you already filter by; '' leaves the plan as written.
-  const [fitId, setFitId] = useState(() => activeProfile(useStore.getState().S)?.id || '')
+// Loads a split, asking first only when one of its weekdays is actually occupied — by a routine
+// that still exists, not by a stale id the Plan already shows as "Rest".
+function applySplit(id, fit) {
+  const { week, routines } = useStore.getState().S
+  const days = starterPlanDays(id)
+  const taken = day => [].concat(week[day] || []).some(rid => routines.some(r => r.id === rid))
+  if (!days.some(taken)) { loadStarterPlan(id, fit); return }
+  confirmSheet({
+    title: t('Use {0}?', SPLIT_COPY[id]().name),
+    message: t('The split goes on {0}. Your existing routines stay; only those days of the weekly plan change.', dayList(days)),
+    confirmText: t('Use this split'),
+    onConfirm: () => loadStarterPlan(id, fit)
+  })
+}
+
+// "4 × 6", "3 × 8–10", "3 × 45 s", "20 min": an exercise's dose as the preview lists it.
+const doseOf = e => e.sec
+  ? (e.sets === 1 && e.sec >= 600 ? t('{0} min', Math.round(e.sec / 60)) : `${e.sets} × ${e.sec} s`)
+  : `${e.sets} × ${e.repsMin ? e.repsMin + '–' + e.reps : e.reps}`
+
+// One split, day by day, before it goes into the plan: what each weekday trains, every exercise
+// with its sets and reps, and the rest days. "Use this split" loads it.
+function SplitPreview({ id, close, done }) {
+  const S = useStore(s => s.S)
+  const profiles = S.equipProfiles || []
+  // Fitting starts on for the profile you already filter by; '' leaves the split as written.
+  const [fitId, setFitId] = useState(() => activeProfile(S)?.id || '')
   const fit = profiles.find(p => p.id === fitId) || null
-  const choose = (id, name) => {
-    const days = starterPlanDays(id)
-    close()
-    // A confirmation is only worth showing when one of those days is actually occupied — by a
-    // routine that still exists, not by a stale id the Plan already shows as "Rest".
-    const taken = day => [].concat(week[day] || []).some(id => routines.some(r => r.id === id))
-    if (!days.some(taken)) { loadStarterPlan(id, fit); return }
-    confirmSheet({
-      title: t('Load {0}?', name),
-      message: t('The new plan goes on {0}. Your existing routines stay; only those days of the weekly plan change.', dayList(days)),
-      confirmText: t('Load plan'),
-      onConfirm: () => loadStarterPlan(id, fit)
-    })
-  }
+  const { name, about } = SPLIT_COPY[id]()
+  const days = previewPlan(id)
+  const byDay = Object.fromEntries(days.map(d => [d.day, d]))
+  const exName = e => (e.custom ? e.name : exerciseNameText(EXIDX[e.id]))
   return <>
-    <h3>{t('Choose starter plan')}</h3>
-    {profiles.length > 0
-      ? <div className="chips" style={{ margin: '0 0 10px' }}>
-          <div className="small dim" style={{ width: '100%' }}>{t('Fit to my equipment')}</div>
-          <button className={'chip nocap' + (!fit ? ' on' : '')} onClick={() => setFitId('')}>{t('As written')}</button>
-          {profiles.map(p => <button key={p.id} className={'chip nocap' + (fit?.id === p.id ? ' on' : '')} onClick={() => setFitId(p.id)}>{p.name}</button>)}
+    <h3>{name}</h3>
+    <div className="muted small" style={{ marginBottom: 12 }}>{t('{0} days a week', days.length)} · {about}</div>
+    {profiles.length > 0 && <div className="chips" style={{ margin: '0 0 12px' }}>
+      <div className="small dim" style={{ width: '100%' }}>{t('Fit to my equipment')}</div>
+      <button className={'chip nocap' + (!fit ? ' on' : '')} onClick={() => setFitId('')}>{t('As written')}</button>
+      {profiles.map(p => <button key={p.id} className={'chip nocap' + (fit?.id === p.id ? ' on' : '')} onClick={() => setFitId(p.id)}>{p.name}</button>)}
+    </div>}
+    <div className="split-week">
+      {weekOrder(weekStartOf(S)).map(d => {
+        const day = byDay[d]
+        if (!day) return <div key={d} className="split-day rest"><span className="split-wd">{t(DAYS[d])}</span><span>{t('Rest')}</span></div>
+        return <div key={d} className="split-day">
+          <div className="split-day-h"><span className="split-wd">{t(DAYS[d])}</span><Icon name={glyphOf(day.glyph)} /><b>{day.name}</b></div>
+          <ul className="split-ex">{day.ex.map((e, i) => <li key={i}><span>{exName(e)}</span><span className="dim">{doseOf(e)}</span></li>)}</ul>
         </div>
-      : <div className="small dim" style={{ margin: '0 0 10px' }}>{t('Add an equipment profile in Settings to fit a plan to what you own.')}</div>}
+      })}
+    </div>
+    <div className="small dim" style={{ margin: '10px 2px 14px' }}>{t('Other days suit you better? Load it, then move any day with Edit week in Plan.')}</div>
+    <Button variant="primary" icon="check" onClick={() => { close(); done?.(); applySplit(id, fit) }}>{t('Use this split')}</Button>
+  </>
+}
+export const splitPreviewSheet = (id, done) => ui().openSheet(close => <SplitPreview id={id} close={close} done={done} />)
+
+function SplitChooser({ close }) {
+  const profiles = useStore(s => s.S.equipProfiles) || []
+  return <>
+    <h3>{t('Choose a split')}</h3>
+    <div className="small dim" style={{ margin: '0 0 10px' }}>{profiles.length
+      ? t('Tap one to see its week. It loads as ordinary routines you can change.')
+      : t('Tap one to see its week. It loads as ordinary routines you can change. Add an equipment profile in Settings to fit a split to what you own.')}</div>
     <div className="list">
       {starterPlanOptions().map(({ id, days }) => {
-        const { name, about } = PLAN_COPY[id]()
-        return <div key={id} className="item" {...tappable(() => choose(id, name))}>
-          <span className="lrow-i" style={{ background: 'var(--surface-3)' }}><Icon name="clipboard" /></span>
-          <div className="grow"><div className="tt">{name}</div><div className="ss">{t('{0} days per week', days)} · {about}</div></div>
+        const { name, about } = SPLIT_COPY[id]()
+        return <div key={id} className="item" {...tappable(() => splitPreviewSheet(id, close))}>
+          <span className="lrow-i" style={{ background: 'var(--surface-3)' }}><Icon name="grid" /></span>
+          <div className="grow"><div className="tt">{name}</div><div className="ss">{t('{0} days a week', days)} · {about}</div></div>
           <Icon name="chevronRight" className="chev" />
         </div>
       })}
@@ -246,7 +282,7 @@ function StarterPlanChooser({ close }) {
   </>
 }
 
-export const starterPlanSheet = () => ui().openSheet(close => <StarterPlanChooser close={close} />)
+export const starterPlanSheet = () => ui().openSheet(close => <SplitChooser close={close} />)
 
 /* ============================ weight picker (shared: body weight + goal) ============================ */
 // Fixed range, not a moving window — a window that resizes itself mid-drag (the previous
@@ -2358,6 +2394,53 @@ function DayAssign({ day, close }) {
   </>
 }
 export const dayAssignSheet = day => ui().openSheet(close => <DayAssign day={day} close={close} />)
+
+// The whole week at once: what each weekday trains, changed on a copy and written in one go with
+// "Update week". A day can stay a combined day (two routines) as it was; picking a routine for it
+// makes it a single one, and Rest empties it. Cancel, or closing the sheet, changes nothing.
+function WeekEditor({ close }) {
+  const st = useStore(s => s.S)
+  const ids = d => [].concat(st.week[d] || []).filter(id => st.routines.some(r => r.id === id))
+  const [draft, setDraft] = useState(() => Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map(d => [d, ids(d)])))
+  const nameOf = id => st.routines.find(r => r.id === id)?.name || ''
+  const key = list => list.join('+')
+  const changed = [0, 1, 2, 3, 4, 5, 6].filter(d => key(draft[d]) !== key(ids(d)))
+  const options = d => {
+    const combo = draft[d].length > 1 || ids(d).length > 1
+      ? [{ value: key(draft[d].length > 1 ? draft[d] : ids(d)), label: deriveSessionName((draft[d].length > 1 ? draft[d] : ids(d)).map(nameOf)), subtitle: t('Combined day') }]
+      : []
+    return [
+      { value: '', label: t('Rest day') },
+      ...combo,
+      ...st.routines.map(r => ({ value: r.id, label: r.name, subtitle: exCount(r.ex.length) })),
+    ]
+  }
+  const pick = (d, v) => setDraft(x => ({ ...x, [d]: v ? v.split('+') : [] }))
+  const save = () => {
+    update(s => {
+      for (const d of changed) { if (draft[d].length) s.week[d] = draft[d]; else delete s.week[d] }
+    })
+    close()
+    toast(tn('Week updated: {0} day changed', 'Week updated: {0} days changed', changed.length))
+  }
+  return <>
+    <h3 style={{ marginBottom: 2 }}>{t('Edit week')}</h3>
+    <div className="muted small" style={{ marginBottom: 12 }}>{t('Choose what each day trains. Nothing changes until you tap Update week.')}</div>
+    <Section className="week-edit">
+      {weekOrder(weekStartOf(st)).map(d => {
+        const list = draft[d]
+        const g = list.length ? glyphOf(st.routines.find(r => r.id === list[0])?.emoji) : 'moon'
+        return <SelectRow key={d} icon={g} iconTint={list.length ? 'var(--acc)' : 'var(--surface-3)'}
+          title={t(DAYN[d]) + (changed.includes(d) ? ' •' : '')} sheetTitle={t(DAYN[d])}
+          value={key(list)} options={options(d)} onChange={v => pick(d, v)} />
+      })}
+    </Section>
+    <Button variant="primary" icon="check" disabled={!changed.length} onClick={save}>{t('Update week')}</Button>
+    <div style={{ height: 8 }} />
+    <Button variant="ghost" className="dim" onClick={close}>{t('Cancel')}</Button>
+  </>
+}
+export const weekEditorSheet = () => ui().openSheet(close => <WeekEditor close={close} />)
 
 /* ============================ workout detail ============================ */
 // Correcting when a saved session happened: typed in from another app, or logged on the wrong
