@@ -30,3 +30,6 @@ frontend/bundle-size.json
 
 # Local planning notes
 docs/superpowers/plans/
+
+# local test-account passwords for scripts/seed-demo.mjs
+scripts/seed-accounts.local.json
