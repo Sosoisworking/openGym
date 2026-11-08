@@ -150,9 +150,43 @@ describe('the strip', () => {
     expect(toast).toHaveBeenCalledWith('Play, pause and skip need Spotify Premium.')
   })
 
+  describe('on Home', () => {
+    it('shows what plays, on its own switch, whatever the workout screen’s “When” says', async () => {
+      signedIn({ when: 'rest', show: false })
+      await mount(<MusicStrip place="home" />)
+      expect(strip().querySelector('.m-name').textContent).toBe('Blinding Lights')
+      expect(document.body.classList.contains('music')).toBe(true)
+    })
+
+    it('is off with Home’s switch off, and asks Spotify nothing then', async () => {
+      signedIn({ home: false })
+      await mount(<MusicStrip place="home" />)
+      expect(strip()).toBe(null)
+      expect(calls).toEqual([])
+    })
+
+    it('nothing playing is no strip on Home', async () => {
+      signedIn()
+      player = () => json(204)
+      await mount(<MusicStrip place="home" />)
+      expect(strip()).toBe(null)
+      expect(document.body.classList.contains('music')).toBe(false)
+    })
+
+    it('signed out by Spotify, it says so there too', async () => {
+      useSpotify.setState({ clientId: CID, refresh: null, lost: true })
+      await mount(<MusicStrip place="home" />)
+      expect(strip().className).toBe('signedout')
+    })
+  })
+
   it('stacks on the rest bar: the bar publishes its height and loses its round top', () => {
     const css = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8')
-    expect(css).toMatch(/body\.resting #music\{bottom:var\(--timer-h,0px\)/)
+    // on the workout screen, docked at the bottom edge
+    expect(css).toMatch(/body\.no-tabbar\.resting #music\{bottom:var\(--timer-h,0px\)/)
+    // on Home, above the tab bar, where the floating rest bar sits too
+    expect(css).toMatch(/body\.resting #music\{bottom:calc\(88px \+ var\(--sab\) \+ var\(--timer-h,0px\)\)/)
+    expect(css).toMatch(/body\.music #timer\{border-top-left-radius:0;border-top-right-radius:0\}/)
     expect(css).toMatch(/body\.no-tabbar\.music #timer\{border-radius:0;box-shadow:none\}/)
     const timer = readFileSync(resolve(process.cwd(), 'src/components/RestTimer.jsx'), 'utf8')
     expect(timer).toMatch(/setProperty\('--timer-h'/)
@@ -190,7 +224,12 @@ describe('Settings → Music', () => {
   it('connected: who, the strip switch and when, and Disconnect after asking', async () => {
     signedIn()
     await mount(<MusicSettings />)
-    expect(titles()).toEqual(['Spotify', 'Show on the workout screen', 'When', 'Disconnect'])
+    expect(titles()).toEqual(['Spotify', 'Show on Home', 'Show on the workout screen', 'When', 'Disconnect'])
+    const [homeSw] = host.querySelectorAll('[role="switch"]')
+    expect(homeSw.getAttribute('aria-checked')).toBe('true')
+    act(() => homeSw.click())
+    expect(useSpotify.getState().home).toBe(false)
+    expect(JSON.parse(localStorage.getItem('tarnished_spotify_v1')).home).toBe(false)
     expect(host.querySelector('.lrow-s').textContent).toBe('Connected as Soso')
     const seg = [...host.querySelectorAll('.seg button')]
     expect(seg.map(b => b.textContent)).toEqual(['Whole workout', 'Only while resting'])
@@ -198,7 +237,7 @@ describe('Settings → Music', () => {
     act(() => seg[1].click())
     expect(useSpotify.getState().when).toBe('rest')
     expect(JSON.parse(localStorage.getItem('tarnished_spotify_v1')).when).toBe('rest')
-    act(() => host.querySelector('[role="switch"]').click())
+    act(() => host.querySelectorAll('[role="switch"]')[1].click())
     expect(useSpotify.getState().show).toBe(false)
     expect(titles()).not.toContain('When')
     act(() => [...host.querySelectorAll('.lrow')].find(r => r.textContent === 'Disconnect').click())

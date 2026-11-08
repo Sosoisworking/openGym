@@ -185,7 +185,10 @@ body.resting #app{padding-bottom:calc(166px + var(--sab))}
 /* The workout screen has no tab bar (App.jsx): only the docked rest bar, when it is there. */
 body.no-tabbar #app{padding-bottom:calc(24px + var(--sab))}
 body.no-tabbar.resting #app{padding-bottom:calc(96px + var(--sab))}
-/* The Spotify strip (MusicStrip.jsx) below the last set, alone or on top of the rest bar. */
+/* The Spotify strip (MusicStrip.jsx) below the page, alone or on top of the rest bar: above the
+   tab bar on Home, at the bottom edge on the workout screen. */
+body.music #app{padding-bottom:calc(160px + var(--sab))}
+body.music.resting #app{padding-bottom:calc(238px + var(--sab))}
 body.no-tabbar.music #app{padding-bottom:calc(88px + var(--sab))}
 body.no-tabbar.music.resting #app{padding-bottom:calc(160px + var(--sab))}
 .workout-end-spacer{height:0}
@@ -1496,19 +1499,28 @@ body.no-tabbar #timer.working{box-shadow:inset 0 var(--hair) 0 var(--acc),0 -10p
 }
 
 /* --- Spotify strip (components/MusicStrip.jsx) --- */
-/* On the workout screen only: docked at the bottom edge like the rest bar, and the same glass.
-   With the rest bar up it sits on top of it (--timer-h, measured by RestTimer.jsx): the bar
-   loses its round top and its shadow, and its progress line is the divider between the two. */
+/* Placed the way the rest bar is, in the same glass. On Home it is a card just above the tab bar;
+   on the workout screen (no tab bar, body.no-tabbar) it is docked at the bottom edge. With the
+   rest bar up it sits on top of it (--timer-h, measured by RestTimer.jsx): the two are square
+   where they meet, and the bar's progress line is the divider between them. */
 #music{
-  position:fixed;inset-inline-start:0;inset-inline-end:0;bottom:0;z-index:60;
+  position:fixed;inset-inline-start:12px;inset-inline-end:12px;bottom:calc(88px + var(--sab));z-index:60;
   background:color-mix(in srgb,var(--surface) 97%,transparent);
   -webkit-backdrop-filter:saturate(180%) blur(10px);backdrop-filter:saturate(180%) blur(10px);
-  border-radius:var(--r-xl) var(--r-xl) 0 0;padding:10px 12px calc(10px + var(--sab));
+  border-radius:var(--r-lg);padding:10px 12px;
   display:flex;align-items:center;gap:4px;
-  box-shadow:0 -10px 30px -14px rgba(0,0,0,.55);
+  box-shadow:0 12px 34px -8px rgba(0,0,0,.55);
   animation:slideup var(--med) var(--ease);transition:bottom var(--med) var(--ease);
 }
-body.resting #music{bottom:var(--timer-h,0px);padding-bottom:10px}
+/* On the floating rest bar: its shadow falls below, so the strip's own goes upward only. */
+body.resting #music{bottom:calc(88px + var(--sab) + var(--timer-h,0px));border-radius:var(--r-lg) var(--r-lg) 0 0;box-shadow:0 -8px 24px -12px rgba(0,0,0,.5)}
+body.music #timer{border-top-left-radius:0;border-top-right-radius:0}
+body.no-tabbar #music{
+  inset-inline-start:0;inset-inline-end:0;bottom:0;
+  border-radius:var(--r-xl) var(--r-xl) 0 0;padding-bottom:calc(10px + var(--sab));
+  box-shadow:0 -10px 30px -14px rgba(0,0,0,.55);
+}
+body.no-tabbar.resting #music{bottom:var(--timer-h,0px);padding-bottom:10px}
 body.no-tabbar.music #timer{border-radius:0;box-shadow:none}
 body.no-tabbar.music #timer.working{box-shadow:inset 0 var(--hair) 0 var(--acc)}
 #music .m-song{display:flex;align-items:center;gap:10px;flex:1 1 auto;min-width:0;margin-inline-end:4px;color:var(--label);text-decoration:none;border-radius:var(--r-sm)}
@@ -1792,6 +1804,8 @@ body.no-tabbar.music #timer.working{box-shadow:inset 0 var(--hair) 0 var(--acc)}
 #toast .toast-act .icn{font-size:16px}
 body.no-tabbar #toast{bottom:calc(24px + var(--sab))}
 body.no-tabbar.resting #toast{bottom:calc(100px + var(--sab))}
+body.music #toast{bottom:calc(164px + var(--sab))}
+body.music.resting #toast{bottom:calc(164px + var(--sab) + var(--timer-h,0px))}
 body.no-tabbar.music #toast{bottom:calc(84px + var(--sab))}
 body.no-tabbar.music.resting #toast{bottom:calc(160px + var(--sab))}
 
@@ -1996,10 +2010,15 @@ button.wl-summary{width:100%;padding:0 0 10px;text-align:start;border-radius:var
   .center{width:340px}
   #timer{left:50%;right:auto;margin-left:-260px;width:520px;bottom:112px}
   body.no-tabbar #timer{left:50%;right:auto;bottom:16px;border-radius:var(--r-xl);padding-bottom:10px;box-shadow:0 12px 40px -10px rgba(0,0,0,.5)}
-  /* A card like the bar, and stacked on it: square where the two meet. */
-  #music{left:50%;right:auto;margin-left:-260px;width:520px;bottom:16px;border-radius:var(--r-xl);padding-bottom:10px;box-shadow:0 12px 40px -10px rgba(0,0,0,.5)}
-  body.resting #music{bottom:calc(16px + var(--timer-h,0px));border-radius:var(--r-xl) var(--r-xl) 0 0}
+  /* A card like the bar, and stacked on it: square where the two meet. Above the floating tab
+     bar on Home, at the bottom on the workout screen. */
+  #music{left:50%;right:auto;margin-left:-260px;width:520px;bottom:112px}
+  body.resting #music{bottom:calc(112px + var(--timer-h,0px))}
+  body.no-tabbar #music{bottom:16px;border-radius:var(--r-xl);padding-bottom:10px;box-shadow:0 12px 40px -10px rgba(0,0,0,.5)}
+  body.no-tabbar.resting #music{bottom:calc(16px + var(--timer-h,0px));border-radius:var(--r-xl) var(--r-xl) 0 0}
   body.no-tabbar.music #timer{border-radius:0 0 var(--r-xl) var(--r-xl);box-shadow:0 12px 40px -10px rgba(0,0,0,.5)}
+  body.music #app{padding-bottom:calc(200px + var(--sab))}
+  body.music.resting #app{padding-bottom:calc(280px + var(--sab))}
   body.no-tabbar.music #app{padding-bottom:calc(110px + var(--sab))}
   body.no-tabbar.music.resting #app{padding-bottom:calc(190px + var(--sab))}
   .exmedia img,.exmedia video{height:380px}

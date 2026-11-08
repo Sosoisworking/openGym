@@ -23,8 +23,8 @@ What Tarnished adds on top of openGym:
   `calendar.app.created`), Settings page `components/CalendarSync.jsx`. Setup: docs/GOOGLE_CALENDAR.md.
 - **English only**: the locale packs and translated exercise text were removed; `t()` stays.
 - **Spotify strip**: `lib/spotify.js` (+ test; PKCE in the browser, no server, per-device
-  localStorage, not in `S`), `components/MusicStrip.jsx` (docked on a running workout, stacked on
-  the rest bar via `--timer-h` from `RestTimer.jsx`), Settings page `components/MusicSettings.jsx`.
+  localStorage, not in `S`), `components/MusicStrip.jsx` (on Home above the tab bar, docked on a
+  running workout; stacked on the rest bar via `--timer-h` from `RestTimer.jsx`), Settings page `components/MusicSettings.jsx`.
   The sign-in comes back to the app root (`takeCallback` in `main.jsx`); web only, not the native shells.
 
 ## Project layout

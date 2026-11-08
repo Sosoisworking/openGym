@@ -103,7 +103,7 @@ export default function Settings({ page = null, find = null, via = null }) {
   const wakeOK = wakeLockSupported()
   // Settings → Music's row says whether Spotify is on, on this device (lib/spotify.js).
   const spotifyOn = useSpotify(s => spotifyConnected(s))
-  const spotifyShown = useSpotify(s => s.show)
+  const spotifyShown = useSpotify(s => s.show || s.home)
 
   // A planner's own queue (no rotationId, or one that doesn't match the saved rotation here) is
   // not this app's to switch off or overwrite. The Scheduling row goes read-only for it.

@@ -241,8 +241,10 @@ function Shell() {
           including on the sign-in screen, when the server has just ended the session. */}
       <SyncBanner />
       {!noTabs && <TabBar onStart={startFlow} />}
-      {/* Spotify, on a running workout (Settings → Music); editing a past one is not a session. */}
-      {inWorkout && !S.active.editingWorkoutId && <MusicStrip />}
+      {/* Spotify (Settings → Music): on a running workout, editing a past one is not a session;
+          and on Home. Keyed by place, so each starts with its own look. */}
+      {inWorkout && !S.active.editingWorkoutId && <MusicStrip key="workout" place="workout" />}
+      {authed && !needsMobileOnboarding && loc.pathname === '/home' && <MusicStrip key="home" place="home" />}
       <RestTimer />
       <Modals />
       <Toast />

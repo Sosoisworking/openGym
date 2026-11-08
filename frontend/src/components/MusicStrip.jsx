@@ -1,7 +1,9 @@
-// The Spotify strip on the workout screen (Settings → Music, lib/spotify.js): the song, the
-// artist and the cover, with previous, play/pause and next. Docked at the bottom edge during a
-// set; with the rest bar up it sits on top of it, and the two read as one piece whose divider is
-// the rest's progress line (index.css, body.music). App.jsx mounts it on a running workout only.
+// The Spotify strip (Settings → Music, lib/spotify.js): the song, the artist and the cover, with
+// previous, play/pause and next. App.jsx mounts it on a running workout and on Home.
+//   · workout: docked at the bottom edge; with the rest bar up it sits on top of it, and the two
+//     read as one piece whose divider is the rest's progress line (index.css, body.music).
+//   · home: a card above the tab bar, where the rest bar floats too, and stacked on it the same
+//     way. Nothing playing is no strip there: Home is not where music gets started.
 //
 // It asks Spotify what is playing every few seconds, only while it is mounted and the page is in
 // front. No signal: the strip steps aside and comes back by itself on the next answer.
@@ -18,9 +20,13 @@ const OPEN_SPOTIFY = 'https://open.spotify.com/'
 let pollNow = null
 const pollSoon = (ms = 700) => setTimeout(() => pollNow?.(), ms)
 
+/** Switched on for this place: Home has its own switch; the workout screen its switch and When. */
+const switchedOn = (sp, place) => (place === 'home' ? !!sp.home : !!sp.show)
+
 /** Whether the strip is wanted at all: switched on, signed in (or signed out by Spotify, which it
- *  says), and for "Only while resting" a rest on the clock. */
-export const stripWanted = (sp, resting) => !!sp.show && (isConnected(sp) || !!sp.lost) && (sp.when !== 'rest' || resting)
+ *  says), and on the workout screen with "Only while resting", a rest on the clock. */
+export const stripWanted = (sp, resting, place = 'workout') => switchedOn(sp, place) && (isConnected(sp) || !!sp.lost)
+  && (place === 'home' || sp.when !== 'rest' || resting)
 
 function usePoll(on) {
   useEffect(() => {
@@ -79,15 +85,15 @@ async function tap(action) {
   pollSoon()
 }
 
-export default function MusicStrip() {
+export default function MusicStrip({ place = 'workout' }) {
   const sp = useSpotify()
   const resting = useUI(s => !!s.timer)
   const nav = useNavigate()
   // Asked for the whole workout whichever "When" is chosen, so a strip that waits for the rest
   // has its song ready the moment the rest starts.
-  usePoll(!!sp.show && isConnected(sp))
+  usePoll(switchedOn(sp, place) && isConnected(sp))
   const now = sp.lost ? { kind: 'signedout' } : sp.now
-  const visible = stripWanted(sp, resting) && !!now && now.kind !== 'offline'
+  const visible = stripWanted(sp, resting, place) && !!now && now.kind !== 'offline' && !(place === 'home' && now.kind === 'idle')
   // index.css: the page keeps room for the strip, and the rest bar joins it.
   useEffect(() => {
     document.body.classList.toggle('music', visible)

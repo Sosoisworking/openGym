@@ -114,7 +114,7 @@ describe('the way back', () => {
     expect(s).toMatchObject({ name: 'Soso', notice: 'connected', busy: false })
     // saved for the next visit, the page-only fields not
     _reload()
-    expect(useSpotify.getState()).toMatchObject({ clientId: CID, refresh: 'R1', name: 'Soso', show: true, when: 'workout', notice: null })
+    expect(useSpotify.getState()).toMatchObject({ clientId: CID, refresh: 'R1', name: 'Soso', show: true, when: 'workout', home: true, notice: null })
   })
 
   it('an account the app does not let in yet is not connected', async () => {

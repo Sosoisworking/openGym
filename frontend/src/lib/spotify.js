@@ -1,5 +1,5 @@
-// Spotify on the workout screen (Settings → Music, components/MusicStrip.jsx): what is playing,
-// with previous, play/pause and next.
+// Spotify on the workout screen and Home (Settings → Music, components/MusicStrip.jsx): what is
+// playing, with previous, play/pause and next.
 //
 // The phone talks to Spotify itself: Authorization Code with PKCE, no client secret and no
 // server in the middle. It works on mobile data with the home server out of reach, and the
@@ -10,7 +10,7 @@
 //
 // Device-local, not part of S. S is the training log that syncs and goes into a backup; a
 // Spotify sign-in is a fact about this browser, so it sits in its own localStorage entry with the
-// Client ID, the account's name and the two strip choices.
+// Client ID, the account's name and the strip choices.
 import { create } from 'zustand'
 import { appBase } from './app-base.js'
 
@@ -22,8 +22,9 @@ export const SCOPES = 'user-read-playback-state user-modify-playback-state'
 export const DASHBOARD = 'https://developer.spotify.com/dashboard'
 export const POLL_MS = 5000
 // What is saved; everything else in the store (`now`, `busy`, `notice`) lasts as long as the page.
-const SAVED = ['clientId', 'access', 'refresh', 'exp', 'name', 'lost', 'show', 'when']
-const DEFAULTS = { clientId: '', access: null, refresh: null, exp: 0, name: '', lost: false, show: true, when: 'workout' }
+// `show` and `when` are the workout screen's, `home` is Home's.
+const SAVED = ['clientId', 'access', 'refresh', 'exp', 'name', 'lost', 'show', 'when', 'home']
+const DEFAULTS = { clientId: '', access: null, refresh: null, exp: 0, name: '', lost: false, show: true, when: 'workout', home: true }
 
 const storage = () => { try { return globalThis.localStorage || null } catch { return null } }
 const readJson = key => { try { return JSON.parse(storage()?.getItem(key) || 'null') } catch { return null } }
@@ -35,6 +36,7 @@ function loadSaved() {
   if (s && typeof s === 'object') for (const k of SAVED) if (k in s) out[k] = s[k]
   if (out.when !== 'rest') out.when = 'workout'
   out.show = out.show !== false
+  out.home = out.home !== false
   return out
 }
 

@@ -1,7 +1,7 @@
-// Settings → Music: Spotify on the workout screen (lib/spotify.js, components/MusicStrip.jsx).
+// Settings → Music: Spotify on Home and the workout screen (lib/spotify.js, components/MusicStrip.jsx).
 // Set up once per browser: the person makes a Spotify app of their own on Spotify's developer
 // site, gives it this app's address to come back to, and pastes its Client ID here. Then it is
-// one switch for the strip and one choice of when it shows.
+// a switch for each place the strip shows, and on the workout screen a choice of when.
 import { useEffect, useState } from 'react'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
@@ -40,7 +40,10 @@ export default function MusicSettings() {
       <Row icon="music" iconTint="var(--green)" title="Spotify" accessory="check"
         subtitle={sp.name ? t('Connected as {0}', sp.name) : t('Connected')} />
     </Section>
-    <Section footer={sp.show ? t('Only while resting keeps the screen clear during a set: the strip shows up with the rest timer.') : undefined}>
+    <Section footer={sp.show ? t('Only while resting keeps the workout screen clear during a set: the strip shows up with the rest timer.') : undefined}>
+      <Row icon="house" iconTint="var(--blue)" title={t('Show on Home')}>
+        <Switch checked={sp.home} onChange={v => setStripPrefs({ home: v })} aria-label={t('Show on Home')} />
+      </Row>
       <Row icon="play" iconTint="var(--green)" title={t('Show on the workout screen')}>
         <Switch checked={sp.show} onChange={v => setStripPrefs({ show: v })} aria-label={t('Show on the workout screen')} />
       </Row>
@@ -53,7 +56,7 @@ export default function MusicSettings() {
     <Section footer={t('Each phone or browser connects on its own; the sign-in is not synced. Disconnect also forgets the Client ID here.')}>
       <Row icon="xmark" iconTint="var(--red)" title={t('Disconnect')} danger onClick={() => confirmSheet({
         title: t('Disconnect Spotify?'),
-        message: t('The strip goes from the workout screen on this device. To take the access back on Spotify’s side too: spotify.com → Account → Manage apps.'),
+        message: t('The strip goes from Home and the workout screen on this device. To take the access back on Spotify’s side too: spotify.com → Account → Manage apps.'),
         confirmText: t('Disconnect'), danger: true,
         onConfirm: () => { disconnect(); setCid('') },
       })} />
