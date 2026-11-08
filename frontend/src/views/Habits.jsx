@@ -35,6 +35,8 @@ function HabitCard({ S, h, days }) {
   const streak = streakOf(S, h.id), best = bestStreakOf(S, h.id)
   const since = addedOn(h)
   const doneIn = days.filter(d => isDone(S, d, h.id)).length
+  // Days since the habit was added that the grid shows. Added today, that's just today.
+  const span = days.filter(d => d <= today && d >= since).length
   return <div className="card" style={{ '--hc': habitColor(h) }}>
     <div className="habit-card-head">
       <span className="habit-swatch" style={{ background: habitColor(h) }} />
@@ -45,7 +47,7 @@ function HabitCard({ S, h, days }) {
     <div className="habit-meta">
       {streak > 0 ? tn('{0}-day streak', '{0}-day streak', streak) : t('No streak yet')}
       {best > 1 && ' · ' + t('best {0}', best)}
-      {' · ' + t('{0} of the last {1} days', doneIn, days.filter(d => d <= today && d >= since).length)}
+      {' · ' + (span > 1 ? t('{0} of the last {1} days', doneIn, span) : doneIn ? t('done today') : t('not done yet today'))}
     </div>
     <div className="habit-grid">
       {days.map(d => {
