@@ -14,7 +14,7 @@ What Tarnished adds on top of openGym:
 - **Look**: dark-first earth palette (umber #1D1613, bone #E4DACC, slate #6D889B, rust #7D2F09,
   dark slate #323D47, moss accent #8A9A5B), all as tokens at the top of `frontend/src/index.css`.
   The mossy-kettlebell logo is `components/Logo.jsx` (theme-aware) and `frontend/resources/icon.svg`
-  (app icon; `node scripts/build-icons.mjs` renders the PWA PNGs).
+  (app icon; `node scripts/build-icons.mjs` renders the PWA PNGs, `--native` the Android/iOS sources, docs/MOBILE.md).
 - **Habits**: `lib/habits.js` (+ test), `components/Habits.jsx`, `views/Habits.jsx`, a Home card.
 - **Calendar**: Home's Week/Month toggle (`S.calView`), `components/MonthCalendar.jsx`, and the
   day sheet (`daySheet` in `sheets.jsx`) with workouts, plan, weigh-in and habits for a day.
@@ -67,7 +67,7 @@ cd frontend && npm run build:mobile   # + cap sync, points media at the CDN data
 There is no linter/formatter configured (no ESLint/Prettier config in the repo) and no
 TypeScript — match the existing style by hand.
 
-The repository is github.com/Sosoisworking/openGym (branch work happens on `tarnished`).
+The repository is github.com/Sosoisworking/openGym (work lands on `main`).
 `.github/workflows/test.yml` runs the frontend, api and MCP suites on Node 22, the same version as
 `web/Dockerfile` / `api/Dockerfile` (`node:22-alpine`). There are no prebuilt images:
 `docker-compose.yml` builds both from source (`pull_policy: build`).

@@ -1,4 +1,4 @@
-package ch.duartesantos.opengym;
+package com.sosoisworking.tarnished;
 
 import android.content.Intent;
 import android.net.Uri;

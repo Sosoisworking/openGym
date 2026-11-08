@@ -1,4 +1,4 @@
-package ch.duartesantos.opengym;
+package com.sosoisworking.tarnished;
 
 import static org.junit.Assert.*;
 

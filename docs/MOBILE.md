@@ -245,16 +245,18 @@ into both native projects — re-run it after every web-code change before build
 
 ## App icons & splash screens
 
-`frontend/resources/icon.svg` is the 1024×1024 source (the app's dumbbell glyph on the
-app background). Generate all platform assets from it on a machine with the tooling:
+`frontend/resources/icon.svg` is the 1024×1024 source: the mossy kettlebell on umber. After
+changing it, render the PNG sources and write them into the two shells:
 
 ```sh
 cd frontend
-npx @capacitor/assets generate --iconBackgroundColor '#0c0e12' --splashBackgroundColor '#0c0e12'
+node scripts/build-icons.mjs --native
+npx @capacitor/assets generate --ios --android --iconBackgroundColor '#1d1613' --iconBackgroundColorDark '#1d1613' --splashBackgroundColor '#1d1613' --splashBackgroundColorDark '#1d1613'
+git checkout -- android/app/src/main/AndroidManifest.xml   # the generator only reformats it
 ```
 
-(If the generator won't take the SVG directly, export it to `resources/icon.png` at
-1024×1024 first — any image tool can do it.)
+The first command also renders the PWA icons (`public/icon-*.png`). The PNGs it leaves in
+`resources/` are gitignored.
 
 ## Distribution — deliberately no app stores
 
@@ -272,9 +274,8 @@ phone; the x86 builds of the barcode scanner's library would add about 12 MB for
 alone. A debug build (`./gradlew assembleDebug`) keeps all four, so it still runs on an x86_64
 emulator.
 
-The app's Android package id is still upstream's (`ch.duartesantos.opengym`), so it would install
-over an openGym APK signed with the same key, which you do not have: in practice it installs
-side by side with nothing. Renaming the package is on the list for the first Tarnished release.
+The app's package id is `com.sosoisworking.tarnished` (the iOS bundle id is the same), so it
+installs next to an openGym app rather than over it. Their data stays apart.
 
 To build and sign your own:
 

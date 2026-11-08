@@ -36,3 +36,6 @@ scripts/seed-accounts.local.json
 
 # HTTPS certificates for testing on a phone (scripts/phone-cert.sh)
 certs/
+
+# Native icon sources rendered by frontend/scripts/build-icons.mjs --native
+frontend/resources/*.png
