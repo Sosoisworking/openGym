@@ -21,6 +21,8 @@ import { pushSupported, enablePush, disablePush, sendTestPush, syncPushSubscript
 import { wakeLockSupported } from '../lib/wakelock.js'
 import { t, tn, dateLocale } from '../lib/i18n.js'
 import CalendarSync from '../components/CalendarSync.jsx'
+import MusicSettings from '../components/MusicSettings.jsx'
+import { useSpotify, isConnected as spotifyConnected } from '../lib/spotify.js'
 import { DEMO, REPO } from '../lib/demo.js'
 import { MOBILE, isAndroid, shareExport, shareExportBlob, syncReminder } from '../lib/mobile.js'
 import { NUDGE_COPY, NUDGE_TONES, toneOf } from '../lib/nudge.js'
@@ -32,6 +34,7 @@ import { limitsFrom, fmtMB, MB } from '../lib/media-limits.js'
 import { setRestAccent } from '../lib/rest-alert.js'
 import { CUSTOM, accentKey, adjustedIn, applyAccent, cleanHex, inkOn, isGrey } from '../lib/accent.js'
 import { checkForUpdate, downloadAndInstall, fetchChecksum, RELEASES_PAGE } from '../lib/update.js'
+import { updateNow, buildTime } from '../lib/web-update.js'
 import { forgetCoach } from '../lib/coach-api.js'
 import { REST_MAX, REST_PAUSE_MIN, REST_PAUSE_MAX, fmtRest, fmtDuration } from '../lib/duration.js'
 import { starterPlanSheet, confirmSheet, importFromApp, importFromHevy, equipmentProfileSheet, plateInventorySheet, dumbbellInventorySheet, menuSheet } from '../sheets.jsx'
@@ -45,7 +48,7 @@ import { usePasskeys, PasskeysRow, DeviceLinkRow, openDeviceLinkRedeem } from '.
 import { Section, Row, SelectRow, Switch, Segmented, Button, TextField, SearchField } from '../components/ui.jsx'
 import { PAGES, ROOT_GROUPS, pageVisible, searchSettings, pageTrail } from './settings-pages.js'
 
-/* Settings (v1.3.11). The root is one screen: an account card, eleven rows that each open a page
+/* Settings (v1.3.11). The root is one screen: an account card, twelve rows that each open a page
    (/settings/<page>), and a search over every row. Rare things live one level further down
    (Workout → Fine-tuning). The rows and their rules are the ones the single long page had; only
    where they sit changed. settings-pages.js says which page holds what, and is what the search
@@ -98,6 +101,9 @@ export default function Settings({ page = null, find = null, via = null }) {
   const importRef = useRef(null)
   const body = useRef(null)
   const wakeOK = wakeLockSupported()
+  // Settings → Music's row says whether Spotify is on, on this device (lib/spotify.js).
+  const spotifyOn = useSpotify(s => spotifyConnected(s))
+  const spotifyShown = useSpotify(s => s.show)
 
   // A planner's own queue (no rotationId, or one that doesn't match the saved rotation here) is
   // not this app's to switch off or overwrite. The Scheduling row goes read-only for it.
@@ -402,6 +408,7 @@ export default function Settings({ page = null, find = null, via = null }) {
   const preview = {
     workout: () => (S.restSec > 0 ? t('{0} rest', fmtRest(S.restSec)) : t('No rest timer')) + ' · ' + layoutLabel,
     alerts: () => [S.sound ? t('Sound') : null, canVibrate && S.vibrate !== false ? t('Vibrate') : null, S.timerFlash ? t('Flash') : null].filter(Boolean).join(' · ') || t('Silent'),
+    music: () => (spotifyOn ? (spotifyShown ? 'Spotify' : t('Hidden')) : t('Off')),
     reminders: () => (S.reminder?.on ? (S.reminder.time || DEF.reminder?.time || '') : t('Off')),
     plan: () => (mode === 'rotation' ? t('Rotation') : t('Fixed Week')) + ' · ' + shortWeekday(weekStartOf(S) === SUNDAY ? 0 : 1),
     units: () => S.unit || 'kg',
@@ -423,6 +430,25 @@ export default function Settings({ page = null, find = null, via = null }) {
     if ((window.history.state?.idx || 0) > 0) nav(-1)
     else nav(up, { replace: true })
   }
+
+  // Settings → About & updates, web: the server's newest build, now.
+  const [webUpdating, setWebUpdating] = useState(false)
+  const webUpdate = async () => {
+    if (webUpdating) return
+    setWebUpdating(true)
+    try {
+      if (await updateNow() === 'latest') toast(t('You have the newest build.'))
+    } catch {
+      toast(t('Could not reach the server to look for a newer build.'))
+    } finally {
+      setWebUpdating(false)
+    }
+  }
+  const builtAt = (() => {
+    const at = buildTime()
+    if (!at) return null
+    try { return new Intl.DateTimeFormat(dateLocale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(at)) } catch { return null }
+  })()
 
   /* ---------------- the pages ---------------- */
   const restRow = <Row icon="timer" iconTint="var(--orange)" title={t('Rest timer')} value={fmtRest(S.restSec)} accessory="chevron"
@@ -642,6 +668,8 @@ export default function Settings({ page = null, find = null, via = null }) {
 
     calendar: () => <CalendarSync />,
 
+    music: () => <MusicSettings />,
+
     units: () => <>
       <Section footer={t('Switching the unit offers to convert every stored weight.')}>
         <Row icon="scale" iconTint="var(--teal)" title={t('Weight unit')}>
@@ -788,8 +816,12 @@ export default function Settings({ page = null, find = null, via = null }) {
       {/* Updates. On Android the row is always there: it checks on demand and installs when a
           release is newer (checksum verified, see onUpdateRowClick). On the web the app updates
           with its server, so the row points at the APK for the phone instead. iOS has no APK. */}
-      <Section footer={MOBILE ? (android ? t('Releases are checked on GitHub. The download is verified against its checksum before the installer opens.') : null) : t('The web app updates together with your server. The Android app installs its own updates from here.')}>
+      <Section footer={MOBILE ? (android ? t('Releases are checked on GitHub. The download is verified against its checksum before the installer opens.') : null) : t('The web app updates together with your server: Update now loads its newest build. The Android app installs its own updates from here.')}>
         <Row icon="info" iconTint="var(--grey)" title={t('Version')} value={'v' + __APP_VERSION__} />
+        {/* The app on a home screen comes back from memory and keeps running the build it
+            started with; this asks the server for its newest one and reloads (lib/web-update.js). */}
+        {!MOBILE && <Row icon="reset" iconTint="var(--green)" title={webUpdating ? t('Updating…') : t('Update now')}
+          subtitle={builtAt ? t('This build: {0}', builtAt) : null} onClick={webUpdate} />}
         {MOBILE
           ? android && <Row icon="download" iconTint="var(--green)"
               title={updateInfo?.hasUpdate ? t('Update to Tarnished v{0}', updateInfo.latestVersion) : t('Check for updates')}

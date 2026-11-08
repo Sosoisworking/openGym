@@ -78,6 +78,13 @@ const P = {
   play: <path d="M8.4 5.6 18 12l-9.6 6.4Z" />,
   pause: <path d="M9.4 5.8v12.4M14.6 5.8v12.4" />,
   skipForward: <><path d="M6.4 5.8 15.2 12l-8.8 6.2Z" /><path d="M18.2 5.8v12.4" /></>,
+  // skipForward mirrored: the previous track
+  skipBack: <><path d="M17.6 5.8 8.8 12l8.8 6.2Z" /><path d="M5.8 5.8v12.4" /></>,
+  // a pair of quavers: music, Settings → Music and the strip with nothing to show
+  music: <><path d="M9 17.2V6.2l10-2v11" /><circle cx="6.6" cy="17.2" r="2.4" /><circle cx="16.6" cy="15.2" r="2.4" /></>,
+  // Spotify's own icon, solid: their rules want it beside anything that shows their songs, in
+  // their green, black or white (components/MusicStrip.jsx). Not redrawn on the grid: it is theirs.
+  spotify: <path fill="currentColor" stroke="none" d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />,
   reset: <><path d="M4.4 12a7.6 7.6 0 1 0 2.3-5.4" /><path d="M4 4.4v4.4h4.4" /></>,
   // undo: an arrow curling back to the start
   undo: <><path d="M8.6 14.4 4.2 10l4.4-4.4" /><path d="M4.6 10h9.6a5.4 5.4 0 0 1 0 10.8h-3" /></>,
@@ -139,6 +146,8 @@ const P = {
   /* ---- v1.3.11: one icon per concept (the Settings redesign names them) ---- */
   // sound, not "notification": a speaker with two waves
   speaker: <><path d="M4.6 9.4h3.2l4.6-3.8v12.8l-4.6-3.8H4.6Z" /><path d="M15.6 9.2a4 4 0 0 1 0 5.6M18 6.8a7.4 7.4 0 0 1 0 10.4" /></>,
+  // the same speaker, muted: a cross where the waves were
+  speakerOff: <><path d="M4.6 9.4h3.2l4.6-3.8v12.8l-4.6-3.8H4.6Z" /><path d="M15.8 9.6l4.8 4.8M20.6 9.6l-4.8 4.8" /></>,
   // a phone with buzz marks on both sides
   vibrate: <><rect x="8" y="4.2" width="8" height="15.6" rx="2" /><path d="M4.8 9v6M19.2 9v6M2.6 10.6v2.8M21.4 10.6v2.8" /></>,
   // keep the screen on (sun stays flash and the light theme)

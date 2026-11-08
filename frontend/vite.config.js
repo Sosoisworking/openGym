@@ -111,8 +111,12 @@ const flavor = {
 const pkgVersion = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version
 const appVersion = process.env.APP_BUILD ? `${pkgVersion}+${process.env.APP_BUILD}` : pkgVersion
 
+// When this copy was built. The version stays the same from one local build to the next, so
+// Settings → About & updates shows this too: the way to see that "Update now" brought a new one.
+const buildTime = new Date().toISOString()
+
 export default defineConfig({
-  define: { __APP_VERSION__: JSON.stringify(appVersion) },
+  define: { __APP_VERSION__: JSON.stringify(appVersion), __BUILD_TIME__: JSON.stringify(buildTime) },
   plugins: [react(), umami, flavor, swStamp, catalogueMedia],
   base: './',
   server: {

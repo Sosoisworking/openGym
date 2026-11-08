@@ -25,6 +25,8 @@ const mocks = vi.hoisted(() => {
   })
   state.checkForUpdate = vi.fn(() => Promise.resolve({ hasUpdate: true, latestVersion: '9.9.9', apkUrl: 'https://x/opengym.apk', hashUrl: null }))
   state.confirmSheet = vi.fn()
+  state.toast = vi.fn()
+  state.updateNow = vi.fn(() => Promise.resolve('latest'))
   return state
 })
 vi.mock('../store/useStore.js', () => {
@@ -33,7 +35,7 @@ vi.mock('../store/useStore.js', () => {
   return { useStore, DEF: { reminder: { time: '17:30' } }, hasData: () => false }
 })
 vi.mock('../store/useUI.js', () => {
-  const snap = () => ({ toast: vi.fn(), openSheet: vi.fn() })
+  const snap = () => ({ toast: mocks.toast, openSheet: vi.fn() })
   const useUI = selector => selector ? selector(snap()) : snap()
   useUI.getState = snap
   return { useUI }
@@ -54,6 +56,10 @@ vi.mock('../lib/update.js', () => ({
   checkForUpdate: (...a) => mocks.checkForUpdate(...a),
   downloadAndInstall: vi.fn(),
 }))
+vi.mock('../lib/web-update.js', () => ({
+  updateNow: (...a) => mocks.updateNow(...a),
+  buildTime: () => '2026-11-08T23:31:00.000Z',
+}))
 vi.mock('./MobileOnboarding.jsx', () => ({ ConnectSheet: () => null }))
 vi.mock('../sheets.jsx', () => ({
   starterPlanSheet: vi.fn(), confirmSheet: (...a) => mocks.confirmSheet(...a), importFromApp: vi.fn(),
@@ -72,6 +78,8 @@ beforeEach(() => {
   mocks.android = false
   mocks.checkForUpdate.mockClear()
   mocks.confirmSheet.mockClear()
+  mocks.toast.mockClear()
+  mocks.updateNow.mockClear()
   host = document.createElement('div')
   document.body.appendChild(host)
   root = createRoot(host)
@@ -89,6 +97,36 @@ const mount = async () => {
 const updateRow = () => [...host.querySelectorAll('.lrow')].find(r => r.textContent.includes('Update to Tarnished v9.9.9'))
 const checkRow = () => [...host.querySelectorAll('.lrow')].find(r => r.textContent.includes('Check for updates'))
 const webRow = () => [...host.querySelectorAll('.lrow')].find(r => r.textContent.includes('Get the Android app'))
+
+const nowRow = () => [...host.querySelectorAll('.lrow')].find(r => /Update now|Updating…/.test(r.querySelector('.lrow-t')?.textContent))
+
+describe('Settings — Update now (web)', () => {
+  it('is on the web build, says when this build was made, and asks for the newest one', async () => {
+    await mount()
+    expect(nowRow().querySelector('.lrow-s').textContent).toMatch(/^This build: .*Nov/)
+    await act(async () => { nowRow().click() })
+    expect(mocks.updateNow).toHaveBeenCalledTimes(1)
+    expect(mocks.toast).toHaveBeenCalledWith('You have the newest build.')
+  })
+
+  it('says so when the server could not be asked, and stays quiet when it reloads', async () => {
+    mocks.updateNow.mockImplementationOnce(() => Promise.reject(new Error('offline')))
+    await mount()
+    await act(async () => { nowRow().click() })
+    expect(mocks.toast).toHaveBeenCalledWith('Could not reach the server to look for a newer build.')
+    mocks.toast.mockClear()
+    mocks.updateNow.mockImplementationOnce(() => Promise.resolve('updated'))
+    await act(async () => { nowRow().click() })
+    expect(mocks.toast).not.toHaveBeenCalled()
+  })
+
+  it('is not on the phone app, which has its own updates', async () => {
+    mocks.MOBILE = true
+    mocks.android = true
+    await mount()
+    expect(nowRow()).toBeUndefined()
+  })
+})
 
 describe('Settings — in-app update check', () => {
   it('web build: never asks for releases; the Updates section points at the APK instead', async () => {

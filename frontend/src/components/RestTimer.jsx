@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useUI } from '../store/useUI.js'
+import { useStore } from '../store/useStore.js'
+import { unlock } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
 import { REST_MAX } from '../lib/duration.js'
 import { durationSheet } from './DurationWheel.jsx'
@@ -43,7 +45,7 @@ export function applyRestLeft(v, opened) {
 //
 // v1.3.11: on the workout screen (which has no tab bar, see App.jsx) the bar is docked at the
 // bottom edge instead of floating as a card over the next set's row, and it is one row: the
-// clock (tap to set it), then −15 s, +15 s, pause and Skip. The progress runs along its top edge,
+// clock (tap to set it), then the sound on/off, −15 s, +15 s, pause and Skip. The progress runs along its top edge,
 // so it takes no width from the buttons. Elsewhere it sits on top of the tab bar.
 // Skip's label, when the longer of Skip and Dismiss would not fit beside the other buttons
 // (German or Russian on a 390 px phone): an icon then, named in full for a screen reader, rather
@@ -75,12 +77,41 @@ function useSkipFits(actsRef, deps) {
   return fits
 }
 
+// The bar's height as --timer-h on the page, while it is up: the Spotify strip sits on top of it
+// on the workout screen (MusicStrip.jsx, index.css body.music), and the bar's height follows the
+// font size and the home indicator's inset, so it is measured rather than assumed.
+function usePublishHeight(ref, deps) {
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const root = document.documentElement
+    const set = () => root.style.setProperty('--timer-h', el.offsetHeight + 'px')
+    set()
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(set) : null
+    ro?.observe(el)
+    return () => { ro?.disconnect(); root.style.removeProperty('--timer-h') }
+  }, deps)
+}
+
+// The rest bar's speaker: the same S.sound as Settings → Timer alerts → Play a sound, one tap away
+// at the gym. The tick reads S.sound each second, so muting mid-rest silences the last beeps and
+// the end chime of this rest too. (The Android app's native alarm keeps what it was booked with.)
+// Turning it on is a tap, so the audio is unlocked now, as in Settings (iOS, #152).
+export function toggleRestSound() {
+  const on = !useStore.getState().S.sound
+  if (on) unlock(true)
+  useStore.getState().update(s => { s.sound = on })
+}
+
 export default function RestTimer() {
   const timer = useUI(s => s.timer)
+  const sound = useStore(s => !!s.S.sound)
   const work = useUI(s => s.work)
   const { addRest, stopRest, pauseRest, resumeRest, finishWorkEarly, stopWork } = useUI()
   const on = work || timer
   const actsRef = useRef(null)
+  const barRef = useRef(null)
+  usePublishHeight(barRef, [!!on, !!work])
   const skipFits = useSkipFits(actsRef, [!!timer && !work, t('Skip'), t('Dismiss')])
   // The page keeps room at its bottom for the bar (index.css body.resting), so the last set and
   // the Finish button can scroll clear of it.
@@ -92,7 +123,7 @@ export default function RestTimer() {
   const pct = Math.max(0, Math.min(100, (on.left / on.total) * 100))
 
   if (work) return (
-    <div id="timer" className="working">
+    <div id="timer" className="working" ref={barRef}>
       <div className="bar" aria-hidden="true"><i style={{ width: pct + '%' }} /></div>
       <div className="tclock">
         <span className="t">{work.left <= 0 && work.overtime ? '+' + clock(-work.left) : clock(work.left)}</span>
@@ -113,7 +144,7 @@ export default function RestTimer() {
   // turns Ready, so a thumb on +15 never lands on −15.
   const label = timer.kind === 'switch' ? t('Switch sides') : timer.paused ? t('Paused') : t('Rest')
   return (
-    <div id="timer" className={'rest' + (timer.paused ? ' paused' : '') + (timer.kind === 'switch' ? ' switch' : '') + (timer.ready ? ' ready' : '')}>
+    <div id="timer" ref={barRef} className={'rest' + (timer.paused ? ' paused' : '') + (timer.kind === 'switch' ? ' switch' : '') + (timer.ready ? ' ready' : '')}>
       <div className="bar" aria-hidden="true"><i style={{ width: pct + '%' }} /></div>
       <button type="button" className="tclock" onClick={adjustRestSheet}
         aria-label={(timer.ready ? t('Ready') : clock(timer.left)) + '. ' + t('Change the time left')}>
@@ -121,6 +152,9 @@ export default function RestTimer() {
         <span className="lbl">{label}<Icon name="chevronDown" /></span>
       </button>
       <div className="acts" ref={actsRef}>
+        {/* First, so −15, +15, pause and Skip keep their places from the right edge. */}
+        <Button size="sm" className={'sound' + (sound ? '' : ' muted')} icon={sound ? 'speaker' : 'speakerOff'}
+          aria-label={t('Timer sound')} aria-pressed={sound} onClick={toggleRestSound} />
         <Button size="sm" className="adj" icon="minus" onClick={() => addRest(-15)}>15s</Button>
         <Button size="sm" className="adj" icon="plus" disabled={!timer.ready && timer.left >= REST_MAX} onClick={() => addRest(15)}>15s</Button>
         {timer.ready

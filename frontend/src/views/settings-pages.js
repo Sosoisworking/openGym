@@ -1,6 +1,6 @@
 // Settings (v1.3.11): which page each row lives on, and the index the search field reads.
 //
-// The root holds eleven rows in four groups plus the account card; each opens a page at
+// The root holds twelve rows in four groups plus the account card; each opens a page at
 // /settings/<page>. Rare things hang one level further down (Workout → Fine-tuning). Titles here
 // are the English keys the pages render with t(), so a search hit can find its row on the page
 // by the same text and flash it (views/Settings.jsx). settings-pages.test.jsx renders every page
@@ -11,6 +11,7 @@ import { ACCENT_NAMES } from '../lib/format.js'
 export const PAGES = {
   workout: { title: 'Workout', icon: 'play', tint: 'var(--green)' },
   alerts: { title: 'Timer alerts', icon: 'speaker', tint: 'var(--pink)' },
+  music: { title: 'Music', icon: 'music', tint: 'var(--green)' },
   reminders: { title: 'Reminders', icon: 'bell', tint: 'var(--red)' },
   plan: { title: 'Plan & schedule', icon: 'calendar', tint: 'var(--orange)' },
   calendar: { title: 'Calendar sync', icon: 'calendar', tint: 'var(--blue)' },
@@ -26,7 +27,7 @@ export const PAGES = {
 export const PAGE_IDS = Object.keys(PAGES)
 
 // The root, top to bottom. Whether a row shows is pageVisible's call.
-export const ROOT_GROUPS = [['workout', 'alerts', 'reminders'], ['plan', 'calendar', 'units', 'equipment'], ['look', 'coach'], ['data', 'about']]
+export const ROOT_GROUPS = [['workout', 'alerts', 'music', 'reminders'], ['plan', 'calendar', 'units', 'equipment'], ['look', 'coach'], ['data', 'about']]
 
 /**
  * Whether a page exists for this device and profile. Reminders need a push server (signed in) or
@@ -38,6 +39,9 @@ export function pageVisible(page, ctx) {
   if (page === 'coach') return !!ctx.mobile
   // Both ways to a calendar app run on the server.
   if (page === 'calendar') return !!ctx.user
+  // Spotify signs in by sending the browser back to an https address of this app; the phone app
+  // has no such address (it would need a link scheme of its own), so for now it is the web app's.
+  if (page === 'music') return !ctx.mobile
   return page in PAGES
 }
 
@@ -80,6 +84,8 @@ export const SEARCH = [
   { page: 'alerts', title: 'Vibrate', icon: 'vibrate', tint: 'var(--indigo)', kw: 'vibrate vibration haptic haptics buzz' },
   { page: 'alerts', title: 'Vibrate on silent too', icon: 'vibrate', tint: 'var(--indigo)', kw: 'alarm silent vibrate android', when: c => c.mobile && c.android && c.canVibrate && c.vibrate },
   { page: 'alerts', title: 'Flash the screen', icon: 'sun', tint: 'var(--yellow)', kw: 'flash light blink screen' },
+  // Music (components/MusicSettings.jsx): the status row is the one there in every state.
+  { page: 'music', title: 'Spotify', icon: 'music', tint: 'var(--green)', kw: 'spotify music song songs playlist player now playing play pause skip track next previous headphones audio', when: c => !c.mobile },
   // Reminders
   { page: 'reminders', title: PUSH, icon: 'bell', tint: 'var(--red)', kw: 'push notification alerts', when: c => !c.mobile && !!c.user && c.pushOK },
   { page: 'reminders', title: 'Workout day reminder', icon: 'calendar', tint: 'var(--orange)', kw: 'reminder notification remind', when: remind, via: PUSH },
@@ -128,6 +134,7 @@ export const SEARCH = [
   { page: 'data', title: 'Reset everything', icon: 'trash', tint: 'var(--red)', kw: 'delete wipe reset erase' },
   // About & updates
   { page: 'about', title: 'Check for updates', icon: 'download', tint: 'var(--green)', kw: 'update apk android version', when: c => c.mobile && c.android },
+  { page: 'about', title: 'Update now', icon: 'reset', tint: 'var(--green)', kw: 'update reload refresh new version build latest', when: c => !c.mobile },
   { page: 'about', title: 'Get the Android app', icon: 'download', tint: 'var(--green)', kw: 'apk android download app', when: c => !c.mobile },
   { page: 'about', title: 'Version', icon: 'info', tint: 'var(--grey)', kw: 'version about licence license source code open source' },
   { page: 'about', title: 'In Chrome: ⋮ menu → Add to Home screen', icon: 'share', tint: 'var(--blue)', kw: 'install app home screen tip pwa', when: c => c.installTip && c.androidWeb },

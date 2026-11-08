@@ -185,6 +185,9 @@ body.resting #app{padding-bottom:calc(166px + var(--sab))}
 /* The workout screen has no tab bar (App.jsx): only the docked rest bar, when it is there. */
 body.no-tabbar #app{padding-bottom:calc(24px + var(--sab))}
 body.no-tabbar.resting #app{padding-bottom:calc(96px + var(--sab))}
+/* The Spotify strip (MusicStrip.jsx) below the last set, alone or on top of the rest bar. */
+body.no-tabbar.music #app{padding-bottom:calc(88px + var(--sab))}
+body.no-tabbar.music.resting #app{padding-bottom:calc(160px + var(--sab))}
 .workout-end-spacer{height:0}
 @keyframes viewfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 #app.vfade{animation:viewfade var(--med) var(--ease)}
@@ -1446,6 +1449,7 @@ body.chips-dragging *{cursor:inherit}
 #timer .acts .btn.plain{background:var(--surface-2);color:var(--label)}
 #timer .acts .btn.plain:active{background:var(--surface-3)}
 #timer .acts .btn{flex:none}
+#timer .acts .sound.muted{color:var(--label-2)}
 #timer .acts .skip{min-width:min(70px,100%);flex:0 1 auto}
 #timer .acts .skip > span{display:grid;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Skip and Dismiss stacked in one cell, the one not in use hidden, so the button keeps one width
@@ -1482,7 +1486,7 @@ body.no-tabbar #timer.working{box-shadow:inset 0 var(--hair) 0 var(--acc),0 -10p
 @media (max-width:399px){
   #timer .acts{gap:4px}
   #timer .acts .adj{padding-inline:6px;gap:1px}
-  #timer .acts .pause,#timer .acts .pause-slot{padding-inline:10px}
+  #timer .acts .pause,#timer .acts .pause-slot,#timer .acts .sound{padding-inline:10px}
   #timer .acts .skip{padding-inline:10px}
 }
 @media (max-width:359px){
@@ -1490,6 +1494,57 @@ body.no-tabbar #timer.working{box-shadow:inset 0 var(--hair) 0 var(--acc),0 -10p
   #timer .t{font-size:25px}
   #timer .acts .skip{min-width:0}
 }
+
+/* --- Spotify strip (components/MusicStrip.jsx) --- */
+/* On the workout screen only: docked at the bottom edge like the rest bar, and the same glass.
+   With the rest bar up it sits on top of it (--timer-h, measured by RestTimer.jsx): the bar
+   loses its round top and its shadow, and its progress line is the divider between the two. */
+#music{
+  position:fixed;inset-inline-start:0;inset-inline-end:0;bottom:0;z-index:60;
+  background:color-mix(in srgb,var(--surface) 97%,transparent);
+  -webkit-backdrop-filter:saturate(180%) blur(10px);backdrop-filter:saturate(180%) blur(10px);
+  border-radius:var(--r-xl) var(--r-xl) 0 0;padding:10px 12px calc(10px + var(--sab));
+  display:flex;align-items:center;gap:4px;
+  box-shadow:0 -10px 30px -14px rgba(0,0,0,.55);
+  animation:slideup var(--med) var(--ease);transition:bottom var(--med) var(--ease);
+}
+body.resting #music{bottom:var(--timer-h,0px);padding-bottom:10px}
+body.no-tabbar.music #timer{border-radius:0;box-shadow:none}
+body.no-tabbar.music #timer.working{box-shadow:inset 0 var(--hair) 0 var(--acc)}
+#music .m-song{display:flex;align-items:center;gap:10px;flex:1 1 auto;min-width:0;margin-inline-end:4px;color:var(--label);text-decoration:none;border-radius:var(--r-sm)}
+#music .m-song:active{opacity:.7}
+/* Spotify's rules: the cover uncropped and unaltered, small corners only. */
+#music .m-art{width:44px;height:44px;flex:none;border-radius:4px;overflow:hidden;background:var(--surface-2);color:var(--label-2);display:flex;align-items:center;justify-content:center;font-size:20px}
+#music .m-art img{width:100%;height:100%;object-fit:cover;display:block}
+#music .m-txt{display:flex;flex-direction:column;min-width:0;flex:1 1 auto}
+#music .m-name{font-size:15px;font-weight:500;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#music .m-by{font-size:13px;line-height:1.3;color:var(--label-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Their icon, in their green, at their smallest size (21 px). */
+#music .m-logo{flex:none;width:21px;height:21px;color:#1ed760}
+#music .m-btn{width:44px;height:44px;flex:none;border-radius:22px;display:flex;align-items:center;justify-content:center;color:var(--label);font-size:22px;--icon-stroke:2}
+#music .m-btn path{fill:currentColor}
+#music .m-btn:active{background:var(--surface-2)}
+#music .m-pp{background:var(--label);color:var(--bg);font-size:20px}
+#music .m-pp:active{background:var(--label);opacity:.8}
+#music.paused .m-name,#music.paused .m-by{color:var(--label-2)}
+#music .m-msg{flex:1 1 auto;min-width:0;padding-inline-start:6px;font-size:15px;color:var(--label-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#music.signedout .m-msg{color:var(--label)}
+#music.signedout .m-art{color:var(--orange)}
+#music .m-act{flex:none;height:44px;padding:0 16px;border-radius:22px;background:var(--acc-soft);color:var(--acc);font-size:15px;display:flex;align-items:center;text-decoration:none}
+#music .m-act:active{opacity:.7}
+
+/* Settings → Music (components/MusicSettings.jsx): the three set-up steps, numbered. */
+.m-steps{padding:14px 16px;display:flex;flex-direction:column;gap:16px}
+.m-step{display:flex;gap:12px;align-items:flex-start}
+.m-num{width:24px;height:24px;flex:none;border-radius:12px;background:var(--surface-2);font-size:13px;display:flex;align-items:center;justify-content:center;margin-top:-1px}
+.m-step p,.m-step label{margin:0;font-size:15px;line-height:1.4}
+.m-step-b{display:flex;flex-direction:column;gap:8px;flex:1 1 auto;min-width:0}
+.m-copy{display:flex;gap:8px;align-items:center}
+.m-copy .input{flex:1 1 auto;min-width:0}
+.m-copy .btn{flex:none}
+.m-cid{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;background:var(--bg-el)}
+.m-hint{font-size:13px;color:var(--label-2);line-height:1.35}
+.m-foot{margin-top:4px}
 
 /* ---------------------------------------------------------------- modal -- */
 #modal-root{position:fixed;inset:0;z-index:100;display:none}
@@ -1737,6 +1792,8 @@ body.no-tabbar #timer.working{box-shadow:inset 0 var(--hair) 0 var(--acc),0 -10p
 #toast .toast-act .icn{font-size:16px}
 body.no-tabbar #toast{bottom:calc(24px + var(--sab))}
 body.no-tabbar.resting #toast{bottom:calc(100px + var(--sab))}
+body.no-tabbar.music #toast{bottom:calc(84px + var(--sab))}
+body.no-tabbar.music.resting #toast{bottom:calc(160px + var(--sab))}
 
 /* ---------------------------------------------------------------- misc --- */
 .empty{text-align:center;color:var(--label-2);padding:44px 20px;font-size:15px;line-height:1.45}
@@ -1939,6 +1996,12 @@ button.wl-summary{width:100%;padding:0 0 10px;text-align:start;border-radius:var
   .center{width:340px}
   #timer{left:50%;right:auto;margin-left:-260px;width:520px;bottom:112px}
   body.no-tabbar #timer{left:50%;right:auto;bottom:16px;border-radius:var(--r-xl);padding-bottom:10px;box-shadow:0 12px 40px -10px rgba(0,0,0,.5)}
+  /* A card like the bar, and stacked on it: square where the two meet. */
+  #music{left:50%;right:auto;margin-left:-260px;width:520px;bottom:16px;border-radius:var(--r-xl);padding-bottom:10px;box-shadow:0 12px 40px -10px rgba(0,0,0,.5)}
+  body.resting #music{bottom:calc(16px + var(--timer-h,0px));border-radius:var(--r-xl) var(--r-xl) 0 0}
+  body.no-tabbar.music #timer{border-radius:0 0 var(--r-xl) var(--r-xl);box-shadow:0 12px 40px -10px rgba(0,0,0,.5)}
+  body.no-tabbar.music #app{padding-bottom:calc(110px + var(--sab))}
+  body.no-tabbar.music.resting #app{padding-bottom:calc(190px + var(--sab))}
   .exmedia img,.exmedia video{height:380px}
   .hm-wrap{display:flex;flex-direction:column;align-items:center}
 }

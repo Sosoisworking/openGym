@@ -25,6 +25,7 @@ import Modals from './components/Modals.jsx'
 import Toast from './components/Toast.jsx'
 import SyncBanner from './components/SyncBanner.jsx'
 import RestTimer from './components/RestTimer.jsx'
+import MusicStrip from './components/MusicStrip.jsx'
 import TimerFlash from './components/TimerFlash.jsx'
 import { openDeviceLinkRedeem } from './components/Passkeys.jsx'
 import Login from './views/Login.jsx'
@@ -240,6 +241,8 @@ function Shell() {
           including on the sign-in screen, when the server has just ended the session. */}
       <SyncBanner />
       {!noTabs && <TabBar onStart={startFlow} />}
+      {/* Spotify, on a running workout (Settings → Music); editing a past one is not a session. */}
+      {inWorkout && !S.active.editingWorkoutId && <MusicStrip />}
       <RestTimer />
       <Modals />
       <Toast />
