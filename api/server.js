@@ -400,13 +400,13 @@ async function sendPush(userId, payload, deviceId) {
 // In memory only — an API restart drops whatever is pending.
 const restTimers = new Map(); // `${userId}:${deviceId}` -> Timeout
 const restKey = (userId, deviceId) => `${userId}:${deviceId || ''}`;
-function scheduleRestTimer(userId, deviceId, sec, lang) {
+function scheduleRestTimer(userId, deviceId, sec) {
   const k = restKey(userId, deviceId);
   const t = restTimers.get(k);
   if (t) clearTimeout(t);
   restTimers.set(k, setTimeout(() => {
     restTimers.delete(k);
-    sendPush(userId, restTimerPush(lang), deviceId);
+    sendPush(userId, restTimerPush(), deviceId);
   }, sec * 1000));
 }
 function cancelRestTimer(userId, deviceId) {
@@ -498,7 +498,7 @@ function nudgeTick(user, S, now) {
   console.log('nudge firing', user.id, rid);
   user.lastNudge = now.date;
   saveDb();
-  sendPush(user.id, nudgePush(S.lang, toneOf(S.reminder), routine, now.date));
+  sendPush(user.id, nudgePush(toneOf(S.reminder), routine, now.date));
 }
 setInterval(() => {
   for (const user of db.users) {
@@ -523,7 +523,7 @@ setInterval(() => {
       console.log('reminder firing', user.id, rid);
       user.lastReminder = now.date;
       saveDb();
-      sendPush(user.id, dayReminderPush(S.lang, routine));
+      sendPush(user.id, dayReminderPush(routine));
     } catch (e) {
       console.error('reminder tick', user.id, e);
     }
@@ -2497,7 +2497,7 @@ const routes = {
   'POST /api/push/test': async (req, res) => {
     const user = readSession(req);
     if (!user) return json(res, 401, { error: 'not signed in' });
-    await sendPush(user.id, testPush(readStateCached(user.id)?.lang));
+    await sendPush(user.id, testPush());
     json(res, 200, { ok: true });
   },
 
@@ -2512,7 +2512,7 @@ const routes = {
     const n = typeof raw === 'number' || typeof raw === 'string' ? Number(raw) : NaN;
     if (!(n >= 1)) return json(res, 400, { error: 'seconds required' });
     const sec = Math.min(3600, Math.round(n));
-    scheduleRestTimer(user.id, deviceIdOf(body.deviceId), sec, readStateCached(user.id)?.lang);
+    scheduleRestTimer(user.id, deviceIdOf(body.deviceId), sec);
     json(res, 200, { ok: true });
   },
 

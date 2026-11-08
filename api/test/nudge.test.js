@@ -82,27 +82,24 @@ test('a malformed state reads as nothing to nudge about', () => {
   assert.equal(toneOf({ tone: 'drill' }), 'drill');
 });
 
-test('push text: by tone, one line per date, routine name filled in, localized', () => {
+test('push text: by tone, one line per date, routine name filled in', () => {
   const iso = '2026-09-07';
   const i = lineIndex(iso, 4);
-  const en = nudgePush('en', 'guilt', { name: 'Push Day' }, iso);
+  const en = nudgePush('guilt', { name: 'Push Day' }, iso);
   assert.equal(en.title, 'I miss you');
   assert.equal(en.body, NUDGE_COPY.en.guilt.lines[i].replace('{0}', 'Push Day'));
   assert.equal(en.tag, 'nudge');
   // the next day takes the next line
-  assert.notEqual(nudgePush('en', 'guilt', { name: 'Push Day' }, '2026-09-08').body, en.body);
-  // every tone, every language: a title and the routine's name where the line has a slot
-  for (const lang of Object.keys(NUDGE_COPY)) {
-    for (const tone of ['friendly', 'guilt', 'drill']) {
-      for (let d = 0; d < 4; d++) {
-        const p = nudgePush(lang, tone, { name: 'Ω' }, `2026-09-0${d + 1}`);
-        assert.ok(p.title && p.body && !p.body.includes('{0}'), `${lang}/${tone}`);
-      }
+  assert.notEqual(nudgePush('guilt', { name: 'Push Day' }, '2026-09-08').body, en.body);
+  // every tone: a title and the routine's name where the line has a slot
+  for (const tone of ['friendly', 'guilt', 'drill']) {
+    for (let d = 0; d < 4; d++) {
+      const p = nudgePush(tone, { name: 'Ω' }, `2026-09-0${d + 1}`);
+      assert.ok(p.title && p.body && !p.body.includes('{0}'), tone);
     }
   }
-  // Tarnished is English-only: any other language, and an unknown tone, read as English and friendly
-  assert.deepEqual(nudgePush('de', 'mean', { name: 'A' }, iso), nudgePush('en', 'friendly', { name: 'A' }, iso));
-  assert.deepEqual(nudgePush('xx', 'mean', { name: 'A' }, iso), nudgePush('en', 'friendly', { name: 'A' }, iso));
+  // an unknown tone reads as friendly
+  assert.deepEqual(nudgePush('mean', { name: 'A' }, iso), nudgePush('friendly', { name: 'A' }, iso));
   // a name with $-patterns is inserted literally
-  assert.match(nudgePush('en', 'friendly', { name: '$& $1' }, '2026-09-04').body + nudgePush('en', 'friendly', { name: '$& $1' }, '2026-09-05').body, /\$& \$1/);
+  assert.match(nudgePush('friendly', { name: '$& $1' }, '2026-09-04').body + nudgePush('friendly', { name: '$& $1' }, '2026-09-05').body, /\$& \$1/);
 });

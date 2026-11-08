@@ -2,26 +2,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { dayReminderPush, restTimerPush, testPush } from '../push-messages.js';
 
-test('localizes every server-generated notification in pt-BR', () => {
-  assert.deepEqual(restTimerPush('pt-BR'), {
-    title: 'Descanso terminado 💪',
-    body: 'Hora da próxima série.',
-    tag: 'rest-timer',
-  });
-  assert.deepEqual(testPush('pt-BR'), {
+test('server-generated notifications are in English', () => {
+  assert.deepEqual(restTimerPush(), { title: 'Rest over 💪', body: 'Time for your next set.', tag: 'rest-timer' });
+  assert.deepEqual(testPush(), {
     title: 'Tarnished',
-    body: 'Notificação de teste ✅ É assim que os alertas aparecem.',
+    body: 'Test notification ✅ This is what alerts look like.',
     tag: 'test',
   });
-  assert.deepEqual(dayReminderPush('pt-BR', { name: 'Treino A', emoji: '💪' }), {
-    title: '💪 Treino A hoje',
-    body: 'Está no seu plano. Bora treinar 💪',
+  assert.deepEqual(dayReminderPush({ name: 'Push Day', emoji: '💪' }), {
+    title: '💪 Push Day today',
+    body: "It's on your plan. Let's go 💪",
     tag: 'day-reminder',
   });
-});
-
-test('keeps the existing English copy as the fallback', () => {
-  assert.deepEqual(restTimerPush('fr'), restTimerPush('en'));
-  assert.equal(dayReminderPush('unknown', null).title, 'Workout planned today');
-  assert.equal(testPush(undefined).body, 'Test notification ✅ This is what alerts look like.');
+  assert.equal(dayReminderPush({ name: 'Legs' }).title, '🏋️ Legs today');
+  assert.equal(dayReminderPush(null).title, 'Workout planned today');
 });
