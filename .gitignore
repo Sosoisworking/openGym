@@ -33,3 +33,6 @@ docs/superpowers/plans/
 
 # local test-account passwords for scripts/seed-demo.mjs
 scripts/seed-accounts.local.json
+
+# HTTPS certificates for testing on a phone (scripts/phone-cert.sh)
+certs/

@@ -37,6 +37,7 @@ All settings live in `.env`; [`.env.example`](../.env.example) explains each one
 | [Contributing](../CONTRIBUTING.md) | Before your first pull request: setup, guidelines, what CI checks |
 | [CLAUDE.md](../CLAUDE.md) | You want the architecture in one page (written for Claude Code, useful for people too) |
 | [HTTP API](API.md) | You're touching routes; the OpenAPI spec is the source of truth |
+| [Testing on your phone](PHONE_TESTING.md) | You want your development copy on your iPhone as a Home Screen app, over HTTPS on your Wi-Fi |
 | [Changelog](../CHANGELOG.md) | You want to know what changed in a release |
 
 Design notes for specific features, kept next to the code they describe:

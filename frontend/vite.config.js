@@ -16,24 +16,35 @@ const apiOrigin = process.env.API_ORIGIN || 'http://localhost:8080'
 // Exercise media: served straight from catalogue/media in dev (see catalogueMedia below), or
 // proxied to a server of your choice with MEDIA_TARGET.
 const media = process.env.MEDIA_TARGET
+function serveCatalogueMedia(server) {
+  if (media) return
+  const dirs = { '/exercise-media/still/': ['still', '.webp'], '/exercise-media/clip/': ['clip', '.mp4'] }
+  const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '../catalogue/media')
+  server.middlewares.use((req, res, next) => {
+    const prefix = Object.keys(dirs).find(p => req.url.startsWith(p))
+    if (!prefix) return next()
+    const [dir, ext] = dirs[prefix]
+    const name = decodeURIComponent(req.url.slice(prefix.length).split('?')[0])
+    const file = join(root, dir, name)
+    if (!/^\d{4,5}\.(webp|mp4)$/.test(name) || !name.endsWith(ext) || !existsSync(file)) { res.statusCode = 404; return res.end() }
+    res.setHeader('Content-Type', ext === '.mp4' ? 'video/mp4' : 'image/webp')
+    res.end(readFileSync(file))
+  })
+}
+// Both the dev server and `vite preview` (the built app, for testing on a phone).
 const catalogueMedia = {
   name: 'opengym-catalogue-media',
-  configureServer(server) {
-    if (media) return
-    const dirs = { '/exercise-media/still/': ['still', '.webp'], '/exercise-media/clip/': ['clip', '.mp4'] }
-    const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '../catalogue/media')
-    server.middlewares.use((req, res, next) => {
-      const prefix = Object.keys(dirs).find(p => req.url.startsWith(p))
-      if (!prefix) return next()
-      const [dir, ext] = dirs[prefix]
-      const name = decodeURIComponent(req.url.slice(prefix.length).split('?')[0])
-      const file = join(root, dir, name)
-      if (!/^\d{4,5}\.(webp|mp4)$/.test(name) || !name.endsWith(ext) || !existsSync(file)) { res.statusCode = 404; return res.end() }
-      res.setHeader('Content-Type', ext === '.mp4' ? 'video/mp4' : 'image/webp')
-      res.end(readFileSync(file))
-    })
-  }
+  configureServer: serveCatalogueMedia,
+  configurePreviewServer: serveCatalogueMedia,
 }
+
+// HTTPS for testing on a phone over the home network (docs/PHONE_TESTING.md): HTTPS_CERT and
+// HTTPS_KEY point at the files scripts/phone-cert.sh makes. The computer's <name>.local address
+// is let in too; Vite only answers localhost and IP addresses by default.
+const https = process.env.HTTPS_CERT && process.env.HTTPS_KEY
+  ? { cert: readFileSync(process.env.HTTPS_CERT), key: readFileSync(process.env.HTTPS_KEY) }
+  : undefined
+const allowedHosts = https ? ['.local'] : undefined
 
 // Optional web analytics (Umami). Injected only when BOTH vars are set at build time,
 // so a plain `npm run build` — and every self-hosted install — stays telemetry-free.
@@ -109,6 +120,9 @@ export default defineConfig({
     // and is imported by the phone build. vite build and vitest already reach it; the dev
     // server needs to be told the workspace is wider than frontend/.
     fs: { allow: ['..'] },
+    // `vite preview` takes these three from here too.
+    https,
+    allowedHosts,
     proxy: {
       '/api': { target: backend, changeOrigin: true, headers: { Origin: apiOrigin } },
       ...(media ? {
